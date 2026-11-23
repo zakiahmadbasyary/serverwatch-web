@@ -9,7 +9,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen flex bg-page-bg">
-      <Suspense fallback={<aside className="hidden lg:block w-64 bg-surface border-r border-border" />}>
+      <Suspense fallback={<aside className="hidden lg:block w-64 sticky top-0 h-screen bg-surface border-r border-border" />}>
         <AppSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </Suspense>
       <div className="flex-1 flex flex-col min-w-0">
