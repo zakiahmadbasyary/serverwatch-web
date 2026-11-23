@@ -202,7 +202,7 @@ export function transformRangeTrend(
     for (const [timestamp, val] of netRxMatrix[0].values) {
       const existing = pointsMap.get(timestamp);
       if (existing) {
-        existing.networkRx = Number((parseFloat(val) / 1024).toFixed(0)); // KB/s
+        existing.networkRx = Number((parseFloat(val) / 1024).toFixed(3)); // KB/s (3 desimal agar nilai B/s tidak terbulatkan ke 0)
       }
     }
   }
@@ -212,7 +212,7 @@ export function transformRangeTrend(
     for (const [timestamp, val] of netTxMatrix[0].values) {
       const existing = pointsMap.get(timestamp);
       if (existing) {
-        existing.networkTx = Number((parseFloat(val) / 1024).toFixed(0)); // KB/s
+        existing.networkTx = Number((parseFloat(val) / 1024).toFixed(3)); // KB/s (3 desimal agar nilai B/s tidak terbulatkan ke 0)
       }
     }
   }

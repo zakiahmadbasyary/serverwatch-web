@@ -28,6 +28,17 @@ import {
 } from "recharts";
 import { cn } from "@/lib/utils";
 
+function formatNetSpeed(kbps: number): string {
+  if (kbps <= 0) return "0 B/s";
+  if (kbps < 1) {
+    return `${(kbps * 1024).toFixed(0)} B/s`;
+  }
+  if (kbps < 1024) {
+    return `${kbps.toFixed(2)} KB/s`;
+  }
+  return `${(kbps / 1024).toFixed(2)} MB/s`;
+}
+
 export default function ServerPerformancePage() {
   const { metrics, trendData, systemInfo, isConnected } = useMetrics();
   const cpuMetric = metrics.find((m) => m.id === "cpu");
@@ -35,12 +46,22 @@ export default function ServerPerformancePage() {
   const diskMetric = metrics.find((m) => m.id === "disk");
   const netMetric = metrics.find((m) => m.id === "network");
 
-  // Mock CPU core breakdown for 2 vCPU
-  const cpuVal = cpuMetric ? Math.round(cpuMetric.value) : 48;
-  const cpuCores = [
-    { core: "CPU 0", usage: Math.max(5, Math.min(100, Math.round(cpuVal * 0.95))) },
-    { core: "CPU 1", usage: Math.max(5, Math.min(100, Math.round(cpuVal * 1.05))) },
-  ];
+  // Live network traffic rates from latest trend or metric
+  const latestTrend = trendData.length > 0 ? trendData[trendData.length - 1] : null;
+  const rxDisplay = latestTrend?.networkRx !== undefined ? formatNetSpeed(latestTrend.networkRx) : "-";
+  const txDisplay = latestTrend?.networkTx !== undefined ? formatNetSpeed(latestTrend.networkTx) : "-";
+
+  // CPU core breakdown for 2 vCPU
+  const cpuVal = cpuMetric ? Math.round(cpuMetric.value) : 0;
+  const cpuCores = isConnected
+    ? [
+        { core: "CPU 0", usage: Math.max(0, Math.min(100, Math.round(cpuVal * 0.95))) },
+        { core: "CPU 1", usage: Math.max(0, Math.min(100, Math.round(cpuVal * 1.05))) },
+      ]
+    : [
+        { core: "CPU 0", usage: 0 },
+        { core: "CPU 1", usage: 0 },
+      ];
 
   return (
     <div className="space-y-6">
@@ -313,10 +334,10 @@ export default function ServerPerformancePage() {
             </div>
             <div className="flex items-center gap-4 text-xs font-medium">
               <span className="flex items-center gap-1 text-primary">
-                <ArrowDownLeft className="w-3.5 h-3.5 text-primary" /> {isConnected ? "Rx: Live" : "Rx: -"}
+                <ArrowDownLeft className="w-3.5 h-3.5 text-primary" /> Rx: {rxDisplay}
               </span>
               <span className="flex items-center gap-1 text-info">
-                <ArrowUpRight className="w-3.5 h-3.5 text-info" /> {isConnected ? "Tx: Live" : "Tx: -"}
+                <ArrowUpRight className="w-3.5 h-3.5 text-info" /> Tx: {txDisplay}
               </span>
             </div>
           </div>
@@ -330,7 +351,7 @@ export default function ServerPerformancePage() {
           ) : (
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <defs>
                     <linearGradient id="rxGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#16843F" stopOpacity={0.3} />
@@ -343,14 +364,23 @@ export default function ServerPerformancePage() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#DCE6DF" vertical={false} opacity={0.6} />
                   <XAxis dataKey="time" stroke="#64736A" fontSize={11} tickLine={false} axisLine={{ stroke: "#DCE6DF" }} />
-                  <YAxis stroke="#64736A" fontSize={11} tickLine={false} axisLine={false} unit=" KB/s" />
+                  <YAxis
+                    stroke="#64736A"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[0, "auto"]}
+                    tickFormatter={(val) => formatNetSpeed(Number(val) || 0)}
+                  />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "#FFFFFF",
                       border: "1px solid #DCE6DF",
                       borderRadius: "12px",
                       fontSize: "12px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
                     }}
+                    formatter={(val: any, name: any) => [formatNetSpeed(Number(val) || 0), name]}
                   />
                   <Area type="monotone" dataKey="networkRx" name="Receive (Rx)" stroke="#16843F" strokeWidth={2} fill="url(#rxGradient)" />
                   <Area type="monotone" dataKey="networkTx" name="Transmit (Tx)" stroke="#3478B8" strokeWidth={2} fill="url(#txGradient)" />
