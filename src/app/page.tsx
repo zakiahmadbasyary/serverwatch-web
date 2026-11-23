@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/dashboard/page-header";
@@ -5,29 +7,53 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { ApplicationTable } from "@/components/dashboard/application-table";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import {
-  mockOverviewMetrics,
-  mockTrendData,
-  mockApplications,
-  mockSystemInfo,
-} from "@/lib/mock-data";
-import { CheckCircle2, AlertTriangle, Layers, Server, ArrowRight } from "lucide-react";
+import { useMetrics } from "@/hooks/use-metrics";
+import { Server, ArrowRight, AlertTriangle, Radio } from "lucide-react";
 
 export default function OverviewPage() {
-  const healthyCount = mockApplications.filter((a) => a.status === "healthy").length;
-  const warningCount = mockApplications.filter((a) => a.status === "warning").length;
-  const criticalCount = mockApplications.filter((a) => a.status === "critical").length;
+  const { metrics, trendData, applications, systemInfo, isConnected, isRefreshing } = useMetrics();
+
+  const healthyCount = applications.filter((a) => a.status === "healthy").length;
+  const warningCount = applications.filter((a) => a.status === "warning").length;
+  const criticalCount = applications.filter((a) => a.status === "critical").length;
   const issueCount = warningCount + criticalCount;
 
   return (
     <div className="space-y-6">
+      {/* Offline Alert Banner if Prometheus SSH Tunnel is not connected */}
+      {!isConnected && (
+        <div className="rounded-2xl border border-warning/40 bg-[#FFFDF5] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-[#FFF5D6] flex items-center justify-center shrink-0 text-warning">
+              <AlertTriangle className="w-4 h-4 text-warning" />
+            </div>
+            <div>
+              <span className="font-bold text-text-primary">
+                Prometheus Belum Terhubung (Mode Fallback Mock)
+              </span>
+              <p className="text-text-secondary text-[11px] mt-0.5">
+                Pastikan sesi SSH Tunnel di laptop Anda sedang berjalan:{" "}
+                <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-warning/30 text-text-primary">
+                  ssh -N -L 9090:127.0.0.1:9090 root@IP_VPS
+                </code>
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold text-warning bg-[#FFF5D6] px-2.5 py-1 rounded-full shrink-0 self-start sm:self-auto">
+            Port 9090 Standby
+          </span>
+        </div>
+      )}
+
       {/* Page Header */}
       <PageHeader
         title="Server Overview"
         description="Ringkasan kondisi infrastruktur dan status aplikasi pada VPS produksi."
         systemStatus={{
-          status: issueCount > 0 ? "warning" : "healthy",
-          label: `${healthyCount}/${mockApplications.length} Services Operational`,
+          status: isConnected ? (issueCount > 0 ? "warning" : "healthy") : "unknown",
+          label: isConnected
+            ? `${healthyCount}/${applications.length} Services Operational`
+            : "Prometheus Standby",
         }}
       >
         <Link
@@ -41,7 +67,7 @@ export default function OverviewPage() {
 
       {/* 4 Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {mockOverviewMetrics.map((metric) => (
+        {metrics.map((metric) => (
           <MetricCard key={metric.id} metric={metric} />
         ))}
       </div>
@@ -51,7 +77,7 @@ export default function OverviewPage() {
         {/* Performance Trend Chart (2 cols) */}
         <div className="lg:col-span-2">
           <PerformanceChart
-            data={mockTrendData}
+            data={trendData}
             title="Performance Trends"
             description="CPU & Memory utilization time-series (1-hour window)"
           />
@@ -63,7 +89,7 @@ export default function OverviewPage() {
             <CardHeader>
               <CardTitle>Application Health</CardTitle>
               <CardDescription>
-                Summary of {mockApplications.length} containers and runtimes
+                Summary of {applications.length} containers and runtimes
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -91,16 +117,16 @@ export default function OverviewPage() {
                 <div className="flex justify-between text-text-secondary">
                   <span>Host:</span>
                   <span className="font-mono font-medium text-text-primary">
-                    {mockSystemInfo.hostname}
+                    {systemInfo.hostname}
                   </span>
                 </div>
                 <div className="flex justify-between text-text-secondary">
                   <span>OS:</span>
-                  <span className="font-medium text-text-primary">{mockSystemInfo.os}</span>
+                  <span className="font-medium text-text-primary">{systemInfo.os}</span>
                 </div>
                 <div className="flex justify-between text-text-secondary">
                   <span>Uptime:</span>
-                  <span className="font-medium text-text-primary">{mockSystemInfo.uptime}</span>
+                  <span className="font-medium text-text-primary">{systemInfo.uptime}</span>
                 </div>
               </div>
 
@@ -118,7 +144,7 @@ export default function OverviewPage() {
       </div>
 
       {/* Monitored Applications Quick Table */}
-      <ApplicationTable applications={mockApplications} limit={4} />
+      <ApplicationTable applications={applications} limit={5} />
     </div>
   );
 }

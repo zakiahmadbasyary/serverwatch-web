@@ -3,12 +3,8 @@
 import React from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import {
-  mockSystemInfo,
-  mockOverviewMetrics,
-  mockDiskPartitions,
-  mockTrendData,
-} from "@/lib/mock-data";
+import { useMetrics } from "@/hooks/use-metrics";
+import { mockDiskPartitions } from "@/lib/mock-data";
 import {
   Server,
   Cpu,
@@ -33,13 +29,17 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ServerPerformancePage() {
-  const cpuMetric = mockOverviewMetrics.find((m) => m.id === "cpu");
-  const memMetric = mockOverviewMetrics.find((m) => m.id === "memory");
+  const { metrics, trendData, systemInfo, isConnected } = useMetrics();
+  const cpuMetric = metrics.find((m) => m.id === "cpu");
+  const memMetric = metrics.find((m) => m.id === "memory");
+  const diskMetric = metrics.find((m) => m.id === "disk");
+  const netMetric = metrics.find((m) => m.id === "network");
 
   // Mock CPU core breakdown for 2 vCPU
+  const cpuVal = cpuMetric ? Math.round(cpuMetric.value) : 48;
   const cpuCores = [
-    { core: "CPU 0", usage: 44 },
-    { core: "CPU 1", usage: 53 },
+    { core: "CPU 0", usage: Math.max(5, Math.min(100, Math.round(cpuVal * 0.95))) },
+    { core: "CPU 1", usage: Math.max(5, Math.min(100, Math.round(cpuVal * 1.05))) },
   ];
 
   return (
@@ -49,8 +49,8 @@ export default function ServerPerformancePage() {
         title="Server Performance"
         description="Telemetri mendalam sumber daya CPU, memori, disk sistem file, dan throughput jaringan."
         systemStatus={{
-          status: "healthy",
-          label: "Host Responsive",
+          status: isConnected ? "healthy" : "warning",
+          label: isConnected ? "Prometheus Connected" : "Mock Data (Disconnected)",
         }}
       />
 
@@ -72,35 +72,35 @@ export default function ServerPerformancePage() {
             <div className="p-3.5 rounded-xl bg-page-bg border border-border/80">
               <span className="text-text-secondary text-[11px] block">Hostname / Node</span>
               <span className="font-mono font-bold text-text-primary text-sm mt-0.5 block truncate">
-                {mockSystemInfo.hostname}
+                {systemInfo.hostname}
               </span>
-              <span className="text-[11px] text-text-secondary">IP: {mockSystemInfo.ipAddress}</span>
+              <span className="text-[11px] text-text-secondary">IP: {systemInfo.ipAddress}</span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-page-bg border border-border/80">
               <span className="text-text-secondary text-[11px] block">Operating System</span>
               <span className="font-semibold text-text-primary text-sm mt-0.5 block truncate">
-                {mockSystemInfo.os}
+                {systemInfo.os}
               </span>
               <span className="text-[11px] text-text-secondary truncate block font-mono">
-                {mockSystemInfo.kernel}
+                {systemInfo.kernel}
               </span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-page-bg border border-border/80">
               <span className="text-text-secondary text-[11px] block">CPU Configuration</span>
               <span className="font-semibold text-text-primary text-sm mt-0.5 block">
-                {mockSystemInfo.cores} vCPUs (x86_64)
+                {systemInfo.cores} vCPUs (x86_64)
               </span>
               <span className="text-[11px] text-text-secondary truncate block">
-                {mockSystemInfo.cpuModel}
+                {systemInfo.cpuModel}
               </span>
             </div>
 
             <div className="p-3.5 rounded-xl bg-page-bg border border-border/80">
               <span className="text-text-secondary text-[11px] block">Uptime</span>
               <span className="font-semibold text-text-primary text-sm mt-0.5 block">
-                {mockSystemInfo.uptime}
+                {systemInfo.uptime}
               </span>
               <span className="text-[11px] text-primary flex items-center gap-1 font-medium">
                 <ShieldCheck className="w-3.5 h-3.5 text-primary" /> Node Stable
@@ -186,7 +186,7 @@ export default function ServerPerformancePage() {
             {/* Multi-segment memory bar */}
             <div>
               <div className="flex justify-between text-xs text-text-secondary mb-1.5 font-medium">
-                <span>Memory Pool ({mockSystemInfo.totalMemory} Total)</span>
+                <span>Memory Pool ({systemInfo.totalMemory} Total)</span>
                 <span>{memMetric?.value}% Occupied</span>
               </div>
               <div className="w-full h-3 rounded-full bg-gray-100 overflow-hidden flex">
@@ -316,7 +316,7 @@ export default function ServerPerformancePage() {
         <CardContent>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="rxGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#16843F" stopOpacity={0.3} />

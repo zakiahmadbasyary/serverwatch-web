@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { usePathname } from "next/navigation";
-import { Menu, RefreshCw, Clock, Server, CheckCircle2 } from "lucide-react";
-import { SampleDataBadge } from "@/components/dashboard/status-badge";
-import { mockSystemInfo } from "@/lib/mock-data";
+import { Menu, RefreshCw, Clock, CheckCircle2, AlertCircle, WifiOff } from "lucide-react";
+import { useMetrics } from "@/hooks/use-metrics";
 import { cn } from "@/lib/utils";
 
 interface AppTopbarProps {
@@ -13,8 +12,7 @@ interface AppTopbarProps {
 
 export function AppTopbar({ onOpenSidebar }: AppTopbarProps) {
   const pathname = usePathname();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastRefreshed, setLastRefreshed] = useState("Just now");
+  const { isConnected, source, isRefreshing, lastUpdated, refresh, systemInfo } = useMetrics();
 
   const getPageTitle = () => {
     if (pathname === "/") return "Server Overview";
@@ -22,17 +20,6 @@ export function AppTopbar({ onOpenSidebar }: AppTopbarProps) {
     if (pathname.startsWith("/applications/")) return "Application Detail";
     if (pathname.startsWith("/applications")) return "Monitored Applications";
     return "Dashboard";
-  };
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      const now = new Date();
-      setLastRefreshed(
-        now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-      );
-    }, 600);
   };
 
   return (
@@ -50,30 +37,43 @@ export function AppTopbar({ onOpenSidebar }: AppTopbarProps) {
             {getPageTitle()}
           </h1>
           <p className="text-[11px] text-text-secondary mt-0.5 hidden sm:block">
-            Target Host: <span className="font-mono font-medium text-text-primary">{mockSystemInfo.hostname}</span>
+            Target Host: <span className="font-mono font-medium text-text-primary">{systemInfo.hostname}</span>
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-2.5 sm:gap-4">
-        {/* Sample Data Badge */}
-        <SampleDataBadge className="hidden md:inline-flex" />
+        {/* Connection Status Badge */}
+        {isConnected ? (
+          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-soft text-primary border border-primary/20">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            Prometheus Live
+          </span>
+        ) : (
+          <span
+            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFF9E6] text-warning border border-warning/30"
+            title="Prometheus unreachable. Using mock data fallback."
+          >
+            <span className="w-2 h-2 rounded-full bg-warning" />
+            Prometheus Offline (Mock Fallback)
+          </span>
+        )}
 
         {/* Last updated indicator */}
         <div className="hidden sm:flex items-center gap-1.5 text-xs text-text-secondary font-medium">
           <Clock className="w-3.5 h-3.5 text-text-secondary" />
-          <span>Updated: {lastRefreshed}</span>
+          <span>Updated: {lastUpdated}</span>
         </div>
 
         {/* Refresh button */}
         <button
-          onClick={handleRefresh}
+          onClick={refresh}
           disabled={isRefreshing}
           className={cn(
             "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-surface border border-border text-text-primary hover:bg-primary-soft hover:text-primary hover:border-primary/30 transition-all active:scale-95",
             isRefreshing && "opacity-75 cursor-not-allowed"
           )}
-          title="Refresh Data"
+          title="Refresh Metrics Now"
         >
           <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin text-primary")} />
           <span className="hidden sm:inline">Refresh</span>

@@ -1,15 +1,18 @@
+"use client";
+
 import React from "react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ApplicationTable } from "@/components/dashboard/application-table";
-import { mockApplications } from "@/lib/mock-data";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Layers, ShieldCheck, AlertCircle, RefreshCw } from "lucide-react";
+import { useMetrics } from "@/hooks/use-metrics";
+import { Card } from "@/components/ui/card";
 
 export default function ApplicationsPage() {
-  const dockerCount = mockApplications.filter((a) => a.type === "docker").length;
-  const pm2Count = mockApplications.filter((a) => a.type === "pm2").length;
-  const healthyCount = mockApplications.filter((a) => a.status === "healthy").length;
-  const issueCount = mockApplications.filter((a) => a.status !== "healthy").length;
+  const { applications, isConnected } = useMetrics();
+
+  const dockerCount = applications.filter((a) => a.type === "docker").length;
+  const pm2Count = applications.filter((a) => a.type === "pm2").length;
+  const healthyCount = applications.filter((a) => a.status === "healthy").length;
+  const issueCount = applications.filter((a) => a.status !== "healthy").length;
 
   return (
     <div className="space-y-6">
@@ -18,8 +21,10 @@ export default function ApplicationsPage() {
         title="Monitored Applications"
         description="Daftar container Docker dan proses aplikasi PM2 yang berjalan di dalam VPS."
         systemStatus={{
-          status: issueCount === 0 ? "healthy" : "warning",
-          label: `${healthyCount}/${mockApplications.length} Services Healthy`,
+          status: isConnected ? "healthy" : "warning",
+          label: isConnected
+            ? `${healthyCount}/${applications.length} Services Healthy (Live)`
+            : `${healthyCount}/${applications.length} Services Healthy (Mock Data)`,
         }}
       />
 
@@ -30,7 +35,7 @@ export default function ApplicationsPage() {
             Total Workloads
           </span>
           <div className="text-2xl font-bold text-text-primary mt-1 font-mono">
-            {mockApplications.length}
+            {applications.length}
           </div>
           <span className="text-[11px] text-text-secondary mt-0.5 block">
             {dockerCount} Docker • {pm2Count} PM2
@@ -66,7 +71,7 @@ export default function ApplicationsPage() {
             Monitoring Stack
           </span>
           <div className="text-2xl font-bold text-text-primary mt-1 font-mono">
-            4 Active
+            {applications.filter((a) => a.category === "monitoring").length} Active
           </div>
           <span className="text-[11px] text-text-secondary mt-0.5 block truncate">
             Prometheus, Grafana, Node-Exp, cAdvisor
@@ -75,7 +80,7 @@ export default function ApplicationsPage() {
       </div>
 
       {/* Applications Full Table */}
-      <ApplicationTable applications={mockApplications} showSearch={true} />
+      <ApplicationTable applications={applications} showSearch={true} />
     </div>
   );
 }
