@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   AreaChart,
   Area,
@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import { MetricDataPoint } from "@/types/monitoring";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Activity } from "lucide-react";
+import { Activity, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PerformanceChartProps {
@@ -25,12 +25,9 @@ interface PerformanceChartProps {
 export function PerformanceChart({
   data,
   title = "Performance Trend",
-  description = "CPU & Memory utilization over the last 1 hour",
+  description = "CPU & Memory utilization time-series (1-hour window)",
   metricType = "cpu",
 }: PerformanceChartProps) {
-  const [selectedRange, setSelectedRange] = useState("1h");
-
-  const ranges = ["1h", "6h", "24h", "7d"];
   const hasData = Array.isArray(data) && data.length > 0;
 
   return (
@@ -41,22 +38,10 @@ export function PerformanceChart({
           <CardDescription>{description}</CardDescription>
         </div>
 
-        {/* Range Selector */}
-        <div className="flex items-center bg-page-bg p-1 rounded-xl border border-border self-start sm:self-auto">
-          {ranges.map((range) => (
-            <button
-              key={range}
-              onClick={() => setSelectedRange(range)}
-              className={cn(
-                "px-2.5 py-1 rounded-lg text-xs font-semibold transition-all",
-                selectedRange === range
-                  ? "bg-surface text-primary shadow-xs"
-                  : "text-text-secondary hover:text-text-primary"
-              )}
-            >
-              {range}
-            </button>
-          ))}
+        {/* Fixed 1-Hour Window Badge */}
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-page-bg border border-border text-xs font-medium text-text-secondary self-start sm:self-auto">
+          <Clock className="w-3.5 h-3.5 text-text-secondary" />
+          <span>1h Window</span>
         </div>
       </CardHeader>
 
