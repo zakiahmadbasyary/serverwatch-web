@@ -17,6 +17,7 @@ export default function OverviewPage() {
   const healthyCount = mockApplications.filter((a) => a.status === "healthy").length;
   const warningCount = mockApplications.filter((a) => a.status === "warning").length;
   const criticalCount = mockApplications.filter((a) => a.status === "critical").length;
+  const issueCount = warningCount + criticalCount;
 
   return (
     <div className="space-y-6">
@@ -25,8 +26,8 @@ export default function OverviewPage() {
         title="Server Overview"
         description="Ringkasan kondisi infrastruktur dan status aplikasi pada VPS produksi."
         systemStatus={{
-          status: "healthy",
-          label: "All Systems Operational",
+          status: issueCount > 0 ? "warning" : "healthy",
+          label: `${healthyCount}/${mockApplications.length} Services Operational`,
         }}
       >
         <Link

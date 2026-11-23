@@ -21,6 +21,7 @@ export function ApplicationTable({
 }: ApplicationTableProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterType, setFilterType] = useState<string>("all");
 
   const filtered = applications.filter((app) => {
     const matchesSearch =
@@ -31,7 +32,16 @@ export function ApplicationTable({
     const matchesStatus =
       filterStatus === "all" ? true : app.status === filterStatus;
 
-    return matchesSearch && matchesStatus;
+    const matchesType =
+      filterType === "all"
+        ? true
+        : filterType === "monitoring"
+        ? app.category === "monitoring"
+        : filterType === "docker-business"
+        ? app.type === "docker" && app.category !== "monitoring"
+        : app.type === filterType;
+
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   const displayedApps = limit ? filtered.slice(0, limit) : filtered;
@@ -59,6 +69,16 @@ export function ApplicationTable({
               />
             </div>
             <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="py-1.5 px-3 text-xs bg-page-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary cursor-pointer"
+            >
+              <option value="all">All Workloads</option>
+              <option value="pm2">PM2 (15)</option>
+              <option value="docker-business">Docker Business (5)</option>
+              <option value="monitoring">Monitoring Stack (4)</option>
+            </select>
+            <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="py-1.5 px-3 text-xs bg-page-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary cursor-pointer"
@@ -67,6 +87,7 @@ export function ApplicationTable({
               <option value="healthy">Healthy</option>
               <option value="warning">Warning</option>
               <option value="critical">Critical</option>
+              <option value="unknown">Unknown</option>
             </select>
           </div>
         )}
@@ -111,12 +132,14 @@ export function ApplicationTable({
                       <span
                         className={cn(
                           "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
-                          app.type === "docker"
+                          app.category === "monitoring"
+                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                            : app.type === "docker"
                             ? "bg-blue-50 text-blue-700 border border-blue-200"
                             : "bg-purple-50 text-purple-700 border border-purple-200"
                         )}
                       >
-                        {app.type}
+                        {app.category === "monitoring" ? "Monitor" : app.type}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-mono font-medium text-text-primary">

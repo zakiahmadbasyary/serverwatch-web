@@ -191,8 +191,12 @@ export function ApplicationDetailView({ id }: { id: string }) {
             <CardContent className="space-y-3.5 text-xs">
               <div className="p-3 rounded-xl bg-page-bg border border-border/80">
                 <span className="text-text-secondary text-[11px] block">Runtime Engine</span>
-                <span className="font-semibold text-text-primary capitalize mt-0.5 block">
-                  {app.type} Container
+                <span className="font-semibold text-text-primary mt-0.5 block">
+                  {app.category === "monitoring"
+                    ? "Docker Container (Monitoring Stack)"
+                    : app.type === "docker"
+                    ? "Docker Container (Business)"
+                    : "PM2 Process"}
                 </span>
               </div>
 

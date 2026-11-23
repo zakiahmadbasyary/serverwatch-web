@@ -63,13 +63,13 @@ export default function ApplicationsPage() {
 
         <Card className="p-4 border-border/80">
           <span className="text-xs font-semibold text-info uppercase tracking-wider">
-            cAdvisor Agent
+            Monitoring Stack
           </span>
           <div className="text-2xl font-bold text-text-primary mt-1 font-mono">
-            Active
+            4 Active
           </div>
-          <span className="text-[11px] text-text-secondary mt-0.5 block">
-            Telemetry ready for Phase 3
+          <span className="text-[11px] text-text-secondary mt-0.5 block truncate">
+            Prometheus, Grafana, Node-Exp, cAdvisor
           </span>
         </Card>
       </div>

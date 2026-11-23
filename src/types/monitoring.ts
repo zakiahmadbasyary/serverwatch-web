@@ -27,12 +27,13 @@ export interface MonitoredApplication {
   id: string;
   name: string;
   type: "docker" | "pm2";
+  category?: "business" | "monitoring"; // Pembeda antara workload bisnis dan stack monitoring
   image?: string;
   containerId?: string;
   port?: string;
   cpuUsage: number;
-  memoryUsage: number;
-  memoryRaw: string;
+  memoryUsage: number; // Persentase penggunaan RAM container/proses terhadap total RAM VPS (7.8 GiB)
+  memoryRaw: string;   // Penggunaan RAM aktual container/proses (misal: "245 MB")
   status: MetricStatus;
   statusText: string;
   uptime: string;

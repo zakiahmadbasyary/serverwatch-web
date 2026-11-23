@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, RefreshCw, Clock, Server, CheckCircle2 } from "lucide-react";
 import { SampleDataBadge } from "@/components/dashboard/status-badge";
+import { mockSystemInfo } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 interface AppTopbarProps {
@@ -49,7 +50,7 @@ export function AppTopbar({ onOpenSidebar }: AppTopbarProps) {
             {getPageTitle()}
           </h1>
           <p className="text-[11px] text-text-secondary mt-0.5 hidden sm:block">
-            Target Host: <span className="font-mono font-medium text-text-primary">vps-prod-sg-01</span> (103.145.22.48)
+            Target Host: <span className="font-mono font-medium text-text-primary">{mockSystemInfo.hostname}</span>
           </p>
         </div>
       </div>

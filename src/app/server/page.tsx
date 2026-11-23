@@ -36,12 +36,10 @@ export default function ServerPerformancePage() {
   const cpuMetric = mockOverviewMetrics.find((m) => m.id === "cpu");
   const memMetric = mockOverviewMetrics.find((m) => m.id === "memory");
 
-  // Mock CPU core breakdown
+  // Mock CPU core breakdown for 2 vCPU
   const cpuCores = [
-    { core: "CPU 0", usage: 32 },
-    { core: "CPU 1", usage: 26 },
-    { core: "CPU 2", usage: 41 },
-    { core: "CPU 3", usage: 15 },
+    { core: "CPU 0", usage: 44 },
+    { core: "CPU 1", usage: 53 },
   ];
 
   return (
@@ -138,7 +136,7 @@ export default function ServerPerformancePage() {
           <CardContent className="space-y-4">
             <div className="p-3 rounded-xl bg-page-bg border border-border/60 text-xs flex justify-between items-center">
               <span className="text-text-secondary">Load Average (1m, 5m, 15m):</span>
-              <span className="font-mono font-semibold text-text-primary">1.14, 0.98, 0.85</span>
+              <span className="font-mono font-semibold text-text-primary">0.95, 0.88, 0.76</span>
             </div>
 
             <div className="space-y-3 pt-1">
@@ -180,7 +178,7 @@ export default function ServerPerformancePage() {
                 <span className="text-2xl font-bold text-text-primary font-mono">
                   {memMetric?.value}%
                 </span>
-                <span className="text-[11px] text-text-secondary block">10.27 / 16.0 GB</span>
+                <span className="text-[11px] text-text-secondary block">{memMetric?.formattedValue}</span>
               </div>
             </div>
           </CardHeader>
@@ -188,26 +186,26 @@ export default function ServerPerformancePage() {
             {/* Multi-segment memory bar */}
             <div>
               <div className="flex justify-between text-xs text-text-secondary mb-1.5 font-medium">
-                <span>Memory Pool (16.0 GB Total)</span>
-                <span>64.2% Occupied</span>
+                <span>Memory Pool ({mockSystemInfo.totalMemory} Total)</span>
+                <span>{memMetric?.value}% Occupied</span>
               </div>
               <div className="w-full h-3 rounded-full bg-gray-100 overflow-hidden flex">
-                <div style={{ width: "51%" }} className="bg-primary h-full" title="Used Memory: 8.17 GB" />
-                <div style={{ width: "13%" }} className="bg-info h-full" title="Buffer/Cache: 2.1 GB" />
-                <div style={{ width: "36%" }} className="bg-gray-200 h-full" title="Available: 5.73 GB" />
+                <div style={{ width: "51%" }} className="bg-primary h-full" title="Used Memory: 3.95 GiB" />
+                <div style={{ width: "15%" }} className="bg-info h-full" title="Buffer/Cache: 1.20 GiB" />
+                <div style={{ width: "34%" }} className="bg-gray-200 h-full" title="Available: 2.65 GiB" />
               </div>
               <div className="mt-3 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-                  <span className="text-text-secondary">Used: <b className="text-text-primary">8.17 GB</b></span>
+                  <span className="text-text-secondary">Used: <b className="text-text-primary">3.95 GiB</b></span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-info" />
-                  <span className="text-text-secondary">Cache: <b className="text-text-primary">2.10 GB</b></span>
+                  <span className="text-text-secondary">Cache: <b className="text-text-primary">1.20 GiB</b></span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-                  <span className="text-text-secondary">Free: <b className="text-text-primary">5.73 GB</b></span>
+                  <span className="text-text-secondary">Free: <b className="text-text-primary">2.65 GiB</b></span>
                 </div>
               </div>
             </div>
