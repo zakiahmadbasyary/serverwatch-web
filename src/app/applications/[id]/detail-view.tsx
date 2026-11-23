@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { mockApplications, mockTrendData } from "@/lib/mock-data";
+import { useMetrics } from "@/hooks/use-metrics";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import {
   Layers,
   RotateCcw,
   Clock,
+  Activity,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -24,7 +25,8 @@ import {
 } from "recharts";
 
 export function ApplicationDetailView({ id }: { id: string }) {
-  const app = mockApplications.find((a) => a.id === id);
+  const { applications, trendData, isConnected } = useMetrics();
+  const app = applications.find((a) => a.id === id);
 
   if (!app) {
     return (
@@ -37,21 +39,23 @@ export function ApplicationDetailView({ id }: { id: string }) {
           <span>Back to Applications</span>
         </Link>
         <Card className="p-8 text-center">
-          <h2 className="text-lg font-bold text-text-primary">Application Not Found</h2>
+          <h2 className="text-lg font-bold text-text-primary">Data Aplikasi Tidak Ditemukan</h2>
           <p className="text-xs text-text-secondary mt-1">
-            The requested container or workload ID "{id}" could not be located in mock dataset.
+            Container atau workload dengan ID "{id}" belum terdeteksi dari Prometheus / cAdvisor.
           </p>
         </Card>
       </div>
     );
   }
 
-  // App specific mock trend data scaled to app usage
-  const appTrendData = mockTrendData.map((d) => ({
-    time: d.time,
-    cpu: Number(((d.cpu / 100) * (app.cpuUsage * 2)).toFixed(1)),
-    memory: Number(((d.memory / 100) * (app.memoryUsage * 1.5)).toFixed(1)),
-  }));
+  // App specific trend data if available
+  const appTrendData = Array.isArray(trendData) && trendData.length > 0
+    ? trendData.map((d) => ({
+        time: d.time,
+        cpu: Number(((d.cpu / 100) * (app.cpuUsage * 2)).toFixed(1)),
+        memory: Number(((d.memory / 100) * (app.memoryUsage * 1.5)).toFixed(1)),
+      }))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -145,38 +149,45 @@ export function ApplicationDetailView({ id }: { id: string }) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={appTrendData}
-                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient id="appCpuGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#16843F" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#16843F" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="appMemGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3478B8" stopOpacity={0.35} />
-                        <stop offset="95%" stopColor="#3478B8" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#DCE6DF" vertical={false} opacity={0.6} />
-                    <XAxis dataKey="time" stroke="#64736A" fontSize={11} tickLine={false} axisLine={{ stroke: "#DCE6DF" }} />
-                    <YAxis stroke="#64736A" fontSize={11} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#FFFFFF",
-                        border: "1px solid #DCE6DF",
-                        borderRadius: "12px",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Area type="monotone" dataKey="cpu" name="Container CPU %" stroke="#16843F" strokeWidth={2} fill="url(#appCpuGrad)" />
-                    <Area type="monotone" dataKey="memory" name="Container Mem %" stroke="#3478B8" strokeWidth={2} fill="url(#appMemGrad)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {appTrendData.length === 0 ? (
+                <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-page-bg/40 text-center p-6">
+                  <span className="text-sm font-semibold text-text-primary">Tidak Ada Data Tren</span>
+                  <span className="text-xs text-text-secondary mt-1">Grafik time-series kosong karena belum ada riwayat telemetri.</span>
+                </div>
+              ) : (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={appTrendData}
+                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="appCpuGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#16843F" stopOpacity={0.35} />
+                          <stop offset="95%" stopColor="#16843F" stopOpacity={0.0} />
+                        </linearGradient>
+                        <linearGradient id="appMemGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3478B8" stopOpacity={0.35} />
+                          <stop offset="95%" stopColor="#3478B8" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#DCE6DF" vertical={false} opacity={0.6} />
+                      <XAxis dataKey="time" stroke="#64736A" fontSize={11} tickLine={false} axisLine={{ stroke: "#DCE6DF" }} />
+                      <YAxis stroke="#64736A" fontSize={11} tickLine={false} axisLine={false} unit="%" />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#FFFFFF",
+                          border: "1px solid #DCE6DF",
+                          borderRadius: "12px",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <Area type="monotone" dataKey="cpu" name="Container CPU %" stroke="#16843F" strokeWidth={2} fill="url(#appCpuGrad)" />
+                      <Area type="monotone" dataKey="memory" name="Container Mem %" stroke="#3478B8" strokeWidth={2} fill="url(#appMemGrad)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

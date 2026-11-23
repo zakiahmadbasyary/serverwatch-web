@@ -20,7 +20,7 @@ interface MetricsContextType {
   applications: MonitoredApplication[];
   systemInfo: ServerSystemInfo;
   isConnected: boolean;
-  source: "prometheus" | "mock-fallback";
+  source: "prometheus" | "none";
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;
@@ -30,15 +30,15 @@ interface MetricsContextType {
 
 export function useMetricsPolling(pollIntervalMs = 30000) {
   const [metrics, setMetrics] = useState<ServerMetric[]>(mockOverviewMetrics);
-  const [trendData, setTrendData] = useState<MetricDataPoint[]>(mockTrendData);
-  const [applications, setApplications] = useState<MonitoredApplication[]>(mockApplications);
+  const [trendData, setTrendData] = useState<MetricDataPoint[]>([]);
+  const [applications, setApplications] = useState<MonitoredApplication[]>([]);
   const [systemInfo, setSystemInfo] = useState<ServerSystemInfo>(mockSystemInfo);
   const [isConnected, setIsConnected] = useState<boolean>(false);
-  const [source, setSource] = useState<"prometheus" | "mock-fallback">("mock-fallback");
+  const [source, setSource] = useState<"prometheus" | "none">("none");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<string>("Initializing...");
+  const [lastUpdated, setLastUpdated] = useState<string>("Disconnected");
 
   const fetchMetrics = useCallback(async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
@@ -51,27 +51,42 @@ export function useMetricsPolling(pollIntervalMs = 30000) {
 
       const json = await res.json();
 
-      if (json.metrics) setMetrics(json.metrics);
-      if (json.trendData) setTrendData(json.trendData);
-      if (json.applications) setApplications(json.applications);
-      if (json.systemInfo) setSystemInfo(json.systemInfo);
-
-      setIsConnected(Boolean(json.connected));
-      setSource(json.source || "mock-fallback");
-      setError(json.connected ? null : json.error || "Prometheus is not connected");
-
-      const now = new Date();
-      setLastUpdated(
-        now.toLocaleTimeString("id-ID", {
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-        })
-      );
+      if (json.connected) {
+        setMetrics(json.metrics || []);
+        setTrendData(json.trendData || []);
+        setApplications(json.applications || []);
+        setSystemInfo(json.systemInfo || mockSystemInfo);
+        setIsConnected(true);
+        setSource("prometheus");
+        setError(null);
+        const now = new Date();
+        setLastUpdated(
+          now.toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
+        );
+      } else {
+        // Disconnected: Empty state
+        setMetrics(mockOverviewMetrics);
+        setTrendData([]);
+        setApplications([]);
+        setSystemInfo(mockSystemInfo);
+        setIsConnected(false);
+        setSource("none");
+        setError(json.error || "Prometheus is not connected");
+        setLastUpdated("Disconnected");
+      }
     } catch (err: any) {
+      setMetrics(mockOverviewMetrics);
+      setTrendData([]);
+      setApplications([]);
+      setSystemInfo(mockSystemInfo);
       setIsConnected(false);
-      setSource("mock-fallback");
+      setSource("none");
       setError(err?.message || "Failed to fetch metrics");
+      setLastUpdated("Disconnected");
     } finally {
       setIsLoading(false);
       if (isManual) setIsRefreshing(false);

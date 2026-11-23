@@ -251,39 +251,47 @@ export default function ServerPerformancePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
-                {mockDiskPartitions.map((part) => (
-                  <tr key={part.filesystem} className="hover:bg-primary-soft/20 transition-colors">
-                    <td className="py-3.5 px-5 font-mono font-semibold text-text-primary">
-                      {part.filesystem}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-text-secondary">
-                      {part.mount}
-                    </td>
-                    <td className="py-3.5 px-4 font-mono text-text-primary">{part.size}</td>
-                    <td className="py-3.5 px-4 font-mono text-text-primary">{part.used}</td>
-                    <td className="py-3.5 px-4 font-mono text-text-secondary">{part.available}</td>
-                    <td className="py-3.5 px-5">
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all duration-300",
-                              part.usePercent > 80
-                                ? "bg-danger"
-                                : part.usePercent > 70
-                                ? "bg-warning"
-                                : "bg-primary"
-                            )}
-                            style={{ width: `${part.usePercent}%` }}
-                          />
-                        </div>
-                        <span className="font-mono text-xs font-semibold text-text-primary w-12 text-right">
-                          {part.usePercent}%
-                        </span>
-                      </div>
+                {mockDiskPartitions.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center py-8 text-text-secondary">
+                      Tidak ada data partisi sistem file. Hubungkan Prometheus (port 9090).
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  mockDiskPartitions.map((part) => (
+                    <tr key={part.filesystem} className="hover:bg-primary-soft/20 transition-colors">
+                      <td className="py-3.5 px-5 font-mono font-semibold text-text-primary">
+                        {part.filesystem}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-text-secondary">
+                        {part.mount}
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-text-primary">{part.size}</td>
+                      <td className="py-3.5 px-4 font-mono text-text-primary">{part.used}</td>
+                      <td className="py-3.5 px-4 font-mono text-text-secondary">{part.available}</td>
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all duration-300",
+                                part.usePercent > 80
+                                  ? "bg-danger"
+                                  : part.usePercent > 70
+                                  ? "bg-warning"
+                                  : "bg-primary"
+                              )}
+                              style={{ width: `${part.usePercent}%` }}
+                            />
+                          </div>
+                          <span className="font-mono text-xs font-semibold text-text-primary w-12 text-right">
+                            {part.usePercent}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -305,44 +313,51 @@ export default function ServerPerformancePage() {
             </div>
             <div className="flex items-center gap-4 text-xs font-medium">
               <span className="flex items-center gap-1 text-primary">
-                <ArrowDownLeft className="w-3.5 h-3.5 text-primary" /> Rx: 3.2 MB/s
+                <ArrowDownLeft className="w-3.5 h-3.5 text-primary" /> {isConnected ? "Rx: Live" : "Rx: -"}
               </span>
               <span className="flex items-center gap-1 text-info">
-                <ArrowUpRight className="w-3.5 h-3.5 text-info" /> Tx: 1.6 MB/s
+                <ArrowUpRight className="w-3.5 h-3.5 text-info" /> {isConnected ? "Tx: Live" : "Tx: -"}
               </span>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="rxGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#16843F" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#16843F" stopOpacity={0.0} />
-                  </linearGradient>
-                  <linearGradient id="txGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3478B8" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3478B8" stopOpacity={0.0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#DCE6DF" vertical={false} opacity={0.6} />
-                <XAxis dataKey="time" stroke="#64736A" fontSize={11} tickLine={false} axisLine={{ stroke: "#DCE6DF" }} />
-                <YAxis stroke="#64736A" fontSize={11} tickLine={false} axisLine={false} unit=" KB/s" />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #DCE6DF",
-                    borderRadius: "12px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Area type="monotone" dataKey="networkRx" name="Receive (Rx)" stroke="#16843F" strokeWidth={2} fill="url(#rxGradient)" />
-                <Area type="monotone" dataKey="networkTx" name="Transmit (Tx)" stroke="#3478B8" strokeWidth={2} fill="url(#txGradient)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          {trendData.length === 0 ? (
+            <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-page-bg/40 text-center p-6">
+              <span className="text-sm font-semibold text-text-primary">Tidak Ada Data Throughput Jaringan</span>
+              <span className="text-xs text-text-secondary mt-1">Grafik kosong karena belum terhubung ke Prometheus.</span>
+            </div>
+          ) : (
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="rxGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#16843F" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#16843F" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="txGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3478B8" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3478B8" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#DCE6DF" vertical={false} opacity={0.6} />
+                  <XAxis dataKey="time" stroke="#64736A" fontSize={11} tickLine={false} axisLine={{ stroke: "#DCE6DF" }} />
+                  <YAxis stroke="#64736A" fontSize={11} tickLine={false} axisLine={false} unit=" KB/s" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #DCE6DF",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Area type="monotone" dataKey="networkRx" name="Receive (Rx)" stroke="#16843F" strokeWidth={2} fill="url(#rxGradient)" />
+                  <Area type="monotone" dataKey="networkTx" name="Transmit (Tx)" stroke="#3478B8" strokeWidth={2} fill="url(#txGradient)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

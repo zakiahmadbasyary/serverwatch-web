@@ -29,7 +29,7 @@ export default function OverviewPage() {
             </div>
             <div>
               <span className="font-bold text-text-primary">
-                Prometheus Belum Terhubung (Mode Fallback Mock)
+                Prometheus Belum Terhubung (Tidak Ada Data)
               </span>
               <p className="text-text-secondary text-[11px] mt-0.5">
                 Pastikan sesi SSH Tunnel di laptop Anda sedang berjalan:{" "}

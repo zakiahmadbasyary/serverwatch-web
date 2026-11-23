@@ -24,7 +24,7 @@ export default function ApplicationsPage() {
           status: isConnected ? "healthy" : "warning",
           label: isConnected
             ? `${healthyCount}/${applications.length} Services Healthy (Live)`
-            : `${healthyCount}/${applications.length} Services Healthy (Mock Data)`,
+            : "Tidak Ada Data (Disconnected)",
         }}
       />
 

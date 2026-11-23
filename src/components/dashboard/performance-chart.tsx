@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { MetricDataPoint } from "@/types/monitoring";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface PerformanceChartProps {
@@ -30,6 +31,7 @@ export function PerformanceChart({
   const [selectedRange, setSelectedRange] = useState("1h");
 
   const ranges = ["1h", "6h", "24h", "7d"];
+  const hasData = Array.isArray(data) && data.length > 0;
 
   return (
     <Card className="overflow-hidden">
@@ -59,78 +61,92 @@ export function PerformanceChart({
       </CardHeader>
 
       <CardContent className="pt-6">
-        <div className="h-64 sm:h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#16843F" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#16843F" stopOpacity={0.0} />
-                </linearGradient>
-                <linearGradient id="secondaryGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3478B8" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#3478B8" stopOpacity={0.0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#DCE6DF" vertical={false} opacity={0.6} />
-              <XAxis
-                dataKey="time"
-                stroke="#64736A"
-                fontSize={11}
-                tickLine={false}
-                axisLine={{ stroke: "#DCE6DF" }}
-              />
-              <YAxis
-                stroke="#64736A"
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                domain={[0, 100]}
-                unit="%"
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #DCE6DF",
-                  borderRadius: "12px",
-                  fontSize: "12px",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
-                }}
-                labelStyle={{ fontWeight: "bold", color: "#17251D", marginBottom: "4px" }}
-              />
-              <Area
-                type="monotone"
-                dataKey="cpu"
-                name="CPU Usage"
-                stroke="#16843F"
-                strokeWidth={2.5}
-                fillOpacity={1}
-                fill="url(#primaryGradient)"
-              />
-              <Area
-                type="monotone"
-                dataKey="memory"
-                name="Memory Usage"
-                stroke="#3478B8"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#secondaryGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {!hasData ? (
+          <div className="h-64 sm:h-72 w-full flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-page-bg/40 text-center p-6">
+            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-text-secondary mb-3">
+              <Activity className="w-5 h-5 text-text-secondary" />
+            </div>
+            <h4 className="text-sm font-semibold text-text-primary">Tidak Ada Data Metrik</h4>
+            <p className="text-xs text-text-secondary max-w-sm mt-1">
+              Grafik time-series kosong karena belum terhubung ke Prometheus. Pastikan SSH tunnel port 9090 aktif untuk memuat metrik real-time.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="h-64 sm:h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="primaryGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#16843F" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="#16843F" stopOpacity={0.0} />
+                    </linearGradient>
+                    <linearGradient id="secondaryGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3478B8" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#3478B8" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#DCE6DF" vertical={false} opacity={0.6} />
+                  <XAxis
+                    dataKey="time"
+                    stroke="#64736A"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={{ stroke: "#DCE6DF" }}
+                  />
+                  <YAxis
+                    stroke="#64736A"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[0, 100]}
+                    unit="%"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #DCE6DF",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                    }}
+                    labelStyle={{ fontWeight: "bold", color: "#17251D", marginBottom: "4px" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="cpu"
+                    name="CPU Usage"
+                    stroke="#16843F"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#primaryGradient)"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="memory"
+                    name="Memory Usage"
+                    stroke="#3478B8"
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#secondaryGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
 
-        {/* Legend */}
-        <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-center gap-6 text-xs text-text-secondary">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-primary" />
-            <span className="font-medium text-text-primary">CPU Utilization</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-info" />
-            <span className="font-medium text-text-primary">Memory Utilization</span>
-          </div>
-        </div>
+            {/* Legend */}
+            <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-center gap-6 text-xs text-text-secondary">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-primary" />
+                <span className="font-medium text-text-primary">CPU Utilization</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full bg-info" />
+                <span className="font-medium text-text-primary">Memory Utilization</span>
+              </div>
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );

@@ -51,11 +51,11 @@ export function AppTopbar({ onOpenSidebar }: AppTopbarProps) {
           </span>
         ) : (
           <span
-            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-[#FFF9E6] text-warning border border-warning/30"
-            title="Prometheus unreachable. Using mock data fallback."
+            className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-text-secondary border border-border"
+            title="Prometheus unreachable. No data available."
           >
-            <span className="w-2 h-2 rounded-full bg-warning" />
-            Prometheus Offline (Mock Fallback)
+            <span className="w-2 h-2 rounded-full bg-gray-400" />
+            Prometheus Disconnected (No Data)
           </span>
         )}
 

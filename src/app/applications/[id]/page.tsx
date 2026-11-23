@@ -3,9 +3,7 @@ import { mockApplications } from "@/lib/mock-data";
 import { ApplicationDetailView } from "./detail-view";
 
 export function generateStaticParams() {
-  return mockApplications.map((app) => ({
-    id: app.id,
-  }));
+  return [{ id: "preview" }];
 }
 
 export default async function ApplicationDetailPage({

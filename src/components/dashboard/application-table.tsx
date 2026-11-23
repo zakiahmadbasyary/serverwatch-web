@@ -110,8 +110,13 @@ export function ApplicationTable({
             <tbody className="divide-y divide-border/60">
               {displayedApps.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-8 text-text-secondary">
-                    No applications match your filter criteria.
+                  <td colSpan={7} className="text-center py-12 text-text-secondary">
+                    <div className="flex flex-col items-center justify-center gap-1.5">
+                      <span className="font-semibold text-text-primary text-xs">Tidak Ada Data Container</span>
+                      <span className="text-[11px] text-text-secondary">
+                        Belum ada data aplikasi atau container yang terbaca dari Prometheus / cAdvisor.
+                      </span>
+                    </div>
                   </td>
                 </tr>
               ) : (

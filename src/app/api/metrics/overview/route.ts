@@ -53,35 +53,55 @@ export async function GET() {
       prometheusClient.queryInstant(PROMQL.LOAD_AVERAGE_5M),
       prometheusClient.queryInstant(PROMQL.LOAD_AVERAGE_15M),
       // Trend queries
-      prometheusClient.queryRange(PROMQL.CPU_USAGE_OVERALL, oneHourAgo, now, "300s"),
-      prometheusClient.queryRange(PROMQL.MEM_USAGE_PERCENT, oneHourAgo, now, "300s"),
-      prometheusClient.queryRange(PROMQL.NETWORK_RECEIVE_BYTES_PER_SEC, oneHourAgo, now, "300s"),
-      prometheusClient.queryRange(PROMQL.NETWORK_TRANSMIT_BYTES_PER_SEC, oneHourAgo, now, "300s"),
+      prometheusClient.queryRange(PROMQL.CPU_USAGE_OVERALL, oneHourAgo, now, "300s").catch(() => []),
+      prometheusClient.queryRange(PROMQL.MEM_USAGE_PERCENT, oneHourAgo, now, "300s").catch(() => []),
+      prometheusClient.queryRange(PROMQL.NETWORK_RECEIVE_BYTES_PER_SEC, oneHourAgo, now, "300s").catch(() => []),
+      prometheusClient.queryRange(PROMQL.NETWORK_TRANSMIT_BYTES_PER_SEC, oneHourAgo, now, "300s").catch(() => []),
       // Container queries
       prometheusClient.queryInstant(PROMQL.CONTAINER_CPU_USAGE).catch(() => []),
       prometheusClient.queryInstant(PROMQL.CONTAINER_MEMORY_BYTES).catch(() => []),
     ]);
 
+    const memTotal = extractVectorValue(memTotalRes, 0);
+    const diskTotal = extractVectorValue(diskTotalRes, 0);
+    const diskAvail = extractVectorValue(diskAvailRes, 0);
+
+    const diskUsed = Math.max(0, diskTotal - diskAvail);
+    const diskPercent = diskTotal > 0 ? Number(((diskUsed / diskTotal) * 100).toFixed(1)) : 0;
+
     const overviewMetrics = transformOverviewMetrics({
-      cpuUsage: extractVectorValue(cpuRes, 48.6),
-      memTotal: extractVectorValue(memTotalRes, 7.8 * 1024 * 1024 * 1024),
-      memAvail: extractVectorValue(memAvailRes, 2.65 * 1024 * 1024 * 1024),
-      memCached: extractVectorValue(memCachedRes, 1.20 * 1024 * 1024 * 1024),
-      diskTotal: extractVectorValue(diskTotalRes, 96 * 1e9),
-      diskAvail: extractVectorValue(diskAvailRes, 55 * 1e9),
-      netRx: extractVectorValue(netRxRes, 1600 * 1024),
-      netTx: extractVectorValue(netTxRes, 800 * 1024),
-      load1: extractVectorValue(load1Res, 0.95),
-      load5: extractVectorValue(load5Res, 0.88),
-      load15: extractVectorValue(load15Res, 0.76),
+      cpuUsage: extractVectorValue(cpuRes, 0),
+      memTotal,
+      memAvail: extractVectorValue(memAvailRes, 0),
+      memCached: extractVectorValue(memCachedRes, 0),
+      diskTotal,
+      diskAvail,
+      netRx: extractVectorValue(netRxRes, 0),
+      netTx: extractVectorValue(netTxRes, 0),
+      load1: extractVectorValue(load1Res, 0),
+      load5: extractVectorValue(load5Res, 0),
+      load15: extractVectorValue(load15Res, 0),
+      isConnected: true,
     });
 
     const trendData =
-      cpuTrendRes.length > 0
-        ? transformRangeTrend(cpuTrendRes, memTrendRes, netRxTrendRes, netTxTrendRes, 42.7)
-        : mockTrendData;
+      cpuTrendRes && cpuTrendRes.length > 0
+        ? transformRangeTrend(cpuTrendRes, memTrendRes, netRxTrendRes, netTxTrendRes, diskPercent)
+        : [];
 
     const applications = mergeContainerMetrics(cadvisorCpuRes, cadvisorMemRes);
+
+    const liveSystemInfo = {
+      hostname: "vps-ggp-prod",
+      ipAddress: "127.0.0.1 (via Tunnel)",
+      os: "Ubuntu Server",
+      kernel: "Linux (Node Exporter)",
+      uptime: "Online (Prometheus)",
+      cores: 2,
+      totalMemory: memTotal > 0 ? `${(memTotal / (1024 * 1024 * 1024)).toFixed(1)} GiB` : "-",
+      totalDisk: diskTotal > 0 ? `${(diskTotal / 1e9).toFixed(1)} GB` : "-",
+      cpuModel: "x86_64",
+    };
 
     return NextResponse.json({
       success: true,
@@ -91,21 +111,21 @@ export async function GET() {
       metrics: overviewMetrics,
       trendData,
       applications,
-      systemInfo: mockSystemInfo,
+      systemInfo: liveSystemInfo,
     });
   } catch (err: any) {
     // Ketika Prometheus belum terhubung / SSH tunnel belum nyala:
-    // Kembalikan connected: false dengan pesan yang jelas agar UI menampilkan Disconnected State
+    // Tidak mengembalikan data dummy, kembalikan empty state kosong
     return NextResponse.json(
       {
         success: false,
         connected: false,
-        source: "mock-fallback",
+        source: "none",
         error: err?.message || "Cannot reach Prometheus server",
         timestamp: new Date().toISOString(),
         metrics: mockOverviewMetrics,
-        trendData: mockTrendData,
-        applications: mockApplications,
+        trendData: [],
+        applications: [],
         systemInfo: mockSystemInfo,
       },
       { status: 200 }
