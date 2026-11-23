@@ -16,6 +16,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ServerWatch - Infrastructure & Container Monitoring",
   description: "Lightweight infrastructure and container monitoring dashboard",
+  other: {
+    "color-scheme": "light",
+    "darkreader-lock": "true",
+  },
 };
 
 export default function RootLayout({
@@ -27,8 +31,16 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
     >
-      <body className="min-h-full flex flex-col bg-page-bg text-text-primary">
+      <head>
+        <meta name="color-scheme" content="light" />
+        <meta name="darkreader-lock" content="true" />
+      </head>
+      <body
+        className="min-h-full flex flex-col bg-page-bg text-text-primary"
+        style={{ colorScheme: "light" }}
+      >
         <DashboardShell>{children}</DashboardShell>
       </body>
     </html>

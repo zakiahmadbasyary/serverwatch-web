@@ -21,6 +21,10 @@
 }
 
 :root {
+  color-scheme: light !important;
+  --background: #F5F8F6;
+  --foreground: #17251D;
+
   --color-primary: #16843F;
   --color-primary-hover: #116D34;
   --color-primary-dark: #123321;
@@ -40,9 +44,15 @@
   --color-info: #3478B8;
 }
 
+html {
+  color-scheme: light !important;
+  background-color: #F5F8F6 !important;
+  color: #17251D !important;
+}
+
 body {
-  background-color: #F5F8F6;
-  color: #17251D;
+  background-color: #F5F8F6 !important;
+  color: #17251D !important;
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin: 0;
   padding: 0;
