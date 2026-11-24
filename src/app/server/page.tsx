@@ -46,6 +46,20 @@ export default function ServerPerformancePage() {
   const diskMetric = metrics.find((m) => m.id === "disk");
   const netMetric = metrics.find((m) => m.id === "network");
 
+  // Dynamic Load Average from cpuMetric.detail
+  const loadAvgMatch = cpuMetric?.detail?.match(/Load avg:\s*([^\)]+)/i);
+  const loadAvgDisplay = loadAvgMatch ? loadAvgMatch[1] : (isConnected ? "Normal Load" : "—");
+
+  // Dynamic Memory Breakdown from memMetric.detail
+  const usedMatch = memMetric?.detail?.match(/Used:\s*([^\s•]+(?:\s*[GMK]iB)?)/i);
+  const cacheMatch = memMetric?.detail?.match(/Cache:\s*([^\s•]+(?:\s*[GMK]iB)?)/i);
+  const freeMatch = memMetric?.detail?.match(/Free:\s*([^\s•]+(?:\s*[GMK]iB)?)/i);
+
+  const usedMemDisplay = usedMatch ? usedMatch[1] : (isConnected ? `${memMetric?.formattedValue?.split('/')[0]?.trim() || "-"}` : "-");
+  const cacheMemDisplay = cacheMatch ? cacheMatch[1] : "-";
+  const freeMemDisplay = freeMatch ? freeMatch[1] : "-";
+  const memUsedPercent = memMetric ? Math.min(100, Math.max(0, memMetric.value)) : 0;
+
   // Live network traffic rates from latest trend or metric
   const latestTrend = trendData.length > 0 ? trendData[trendData.length - 1] : null;
   const rxDisplay = latestTrend?.networkRx !== undefined ? formatNetSpeed(latestTrend.networkRx) : "-";
@@ -71,7 +85,7 @@ export default function ServerPerformancePage() {
         description="Telemetri mendalam sumber daya CPU, memori, disk sistem file, dan throughput jaringan."
         systemStatus={{
           status: isConnected ? "healthy" : "warning",
-          label: isConnected ? "Prometheus Connected" : "Mock Data (Disconnected)",
+          label: isConnected ? "Prometheus Live" : "Koneksi Terputus",
         }}
       />
 
@@ -157,7 +171,7 @@ export default function ServerPerformancePage() {
           <CardContent className="space-y-4">
             <div className="p-3 rounded-xl bg-page-bg border border-border/60 text-xs flex justify-between items-center">
               <span className="text-text-secondary">Load Average (1m, 5m, 15m):</span>
-              <span className="font-mono font-semibold text-text-primary">0.95, 0.88, 0.76</span>
+              <span className="font-mono font-semibold text-text-primary">{loadAvgDisplay}</span>
             </div>
 
             <div className="space-y-3 pt-1">
@@ -211,35 +225,31 @@ export default function ServerPerformancePage() {
                 <span>{memMetric?.value}% Occupied</span>
               </div>
               <div className="w-full h-3 rounded-full bg-gray-100 overflow-hidden flex">
-                <div style={{ width: "51%" }} className="bg-primary h-full" title="Used Memory: 3.95 GiB" />
-                <div style={{ width: "15%" }} className="bg-info h-full" title="Buffer/Cache: 1.20 GiB" />
-                <div style={{ width: "34%" }} className="bg-gray-200 h-full" title="Available: 2.65 GiB" />
+                <div style={{ width: `${memUsedPercent}%` }} className="bg-primary h-full transition-all duration-300" title={`Used Memory: ${usedMemDisplay}`} />
+                <div style={{ width: `${Math.max(0, 100 - memUsedPercent)}%` }} className="bg-gray-200 h-full transition-all duration-300" title={`Available: ${freeMemDisplay}`} />
               </div>
               <div className="mt-3 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-primary" />
-                  <span className="text-text-secondary">Used: <b className="text-text-primary">3.95 GiB</b></span>
+                  <span className="text-text-secondary">Used: <b className="text-text-primary">{usedMemDisplay}</b></span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-info" />
-                  <span className="text-text-secondary">Cache: <b className="text-text-primary">1.20 GiB</b></span>
-                </div>
+                {cacheMatch && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-info" />
+                    <span className="text-text-secondary">Cache: <b className="text-text-primary">{cacheMemDisplay}</b></span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-                  <span className="text-text-secondary">Free: <b className="text-text-primary">2.65 GiB</b></span>
+                  <span className="text-text-secondary">Free: <b className="text-text-primary">{freeMemDisplay}</b></span>
                 </div>
               </div>
             </div>
 
-            {/* Swap status */}
-            <div className="p-3 rounded-xl bg-page-bg border border-border/60 text-xs space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Swap Space:</span>
-                <span className="font-mono font-medium text-text-primary">0.12 / 4.0 GB (3.0%)</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                <div className="bg-primary h-full rounded-full" style={{ width: "3%" }} />
-              </div>
+            {/* Memory Subsystem Status */}
+            <div className="p-3 rounded-xl bg-page-bg border border-border/60 text-xs flex justify-between items-center">
+              <span className="text-text-secondary">Memory Subsystem:</span>
+              <span className="font-medium text-text-primary">{isConnected ? "Kernel Virtual Memory / Buffer Pool Active" : "—"}</span>
             </div>
           </CardContent>
         </Card>
@@ -273,11 +283,45 @@ export default function ServerPerformancePage() {
               </thead>
               <tbody className="divide-y divide-border/60">
                 {mockDiskPartitions.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-text-secondary">
-                      Tidak ada data partisi sistem file. Hubungkan Prometheus (port 9090).
-                    </td>
-                  </tr>
+                  diskMetric && isConnected ? (
+                    <tr className="hover:bg-primary-soft/20 transition-colors">
+                      <td className="py-3.5 px-5 font-mono font-semibold text-text-primary">
+                        /dev/sda1 (rootfs)
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-text-secondary">
+                        /
+                      </td>
+                      <td className="py-3.5 px-4 font-mono text-text-primary">{systemInfo.totalDisk || "-"}</td>
+                      <td className="py-3.5 px-4 font-mono text-text-primary">{diskMetric.formattedValue.split('/')[0]?.trim() || "-"}</td>
+                      <td className="py-3.5 px-4 font-mono text-text-secondary">{diskMetric.detail?.split('•')?.[1]?.trim() || "-"}</td>
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 bg-gray-100 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={cn(
+                                "h-full rounded-full transition-all duration-300",
+                                diskMetric.value > 80
+                                  ? "bg-danger"
+                                  : diskMetric.value > 70
+                                  ? "bg-warning"
+                                  : "bg-primary"
+                              )}
+                              style={{ width: `${diskMetric.value}%` }}
+                            />
+                          </div>
+                          <span className="font-mono text-xs font-semibold text-text-primary w-12 text-right">
+                            {diskMetric.value}%
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-text-secondary">
+                        Data partisi penyimpanan belum tersedia. Pastikan node-exporter aktif.
+                      </td>
+                    </tr>
+                  )
                 ) : (
                   mockDiskPartitions.map((part) => (
                     <tr key={part.filesystem} className="hover:bg-primary-soft/20 transition-colors">
@@ -345,8 +389,8 @@ export default function ServerPerformancePage() {
         <CardContent>
           {trendData.length === 0 ? (
             <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-page-bg/40 text-center p-6">
-              <span className="text-sm font-semibold text-text-primary">Tidak Ada Data Throughput Jaringan</span>
-              <span className="text-xs text-text-secondary mt-1">Grafik kosong karena belum terhubung ke Prometheus.</span>
+              <span className="text-sm font-semibold text-text-primary">Data Throughput Jaringan Belum Tersedia</span>
+              <span className="text-xs text-text-secondary mt-1">Grafik time-series akan terisi otomatis seiring data metrik jaringan terkumpul.</span>
             </div>
           ) : (
             <div className="h-64 w-full">

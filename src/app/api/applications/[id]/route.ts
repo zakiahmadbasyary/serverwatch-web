@@ -29,6 +29,9 @@ export async function GET(
       uptimeRes,
       cadvisorCpuRes,
       cadvisorMemRes,
+      cpuCollectorRes,
+      cpuCoresRes,
+      processCountRes,
     ] = await Promise.all([
       prometheusClient.queryInstant(PROMQL.PM2_APP_STATUS).catch(() => []),
       prometheusClient.queryInstant(PROMQL.PM2_APP_TOTAL_MEM).catch(() => []),
@@ -38,6 +41,9 @@ export async function GET(
       prometheusClient.queryInstant(PROMQL.PM2_APP_UPTIME).catch(() => []),
       prometheusClient.queryInstant(PROMQL.CONTAINER_CPU_USAGE).catch(() => []),
       prometheusClient.queryInstant(PROMQL.CONTAINER_MEMORY_BYTES).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_CPU_PERCENT).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_CPU_CORES).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_PROCESS_COUNT).catch(() => []),
     ]);
 
     const pm2Apps = transformPm2Applications({
@@ -47,6 +53,9 @@ export async function GET(
       instanceResults: instanceRes,
       restartResults: restartRes,
       uptimeResults: uptimeRes,
+      cpuCollectorResults: cpuCollectorRes,
+      cpuCoresResults: cpuCoresRes,
+      processCountResults: processCountRes,
     });
 
     const dockerApps = mergeContainerMetrics(cadvisorCpuRes, cadvisorMemRes);
@@ -80,7 +89,7 @@ export async function GET(
       const [cpuMatrix, memMatrix] = await Promise.all([
         prometheusClient
           .queryRange(
-            `pm2_app_average_cpu{app="${escapedName}"} or pm2_app_average_cpu{name="${escapedName}"}`,
+            `serverwatch_pm2_app_cpu_percent{app="${escapedName}"} or pm2_app_average_cpu{app="${escapedName}"} or pm2_app_average_cpu{name="${escapedName}"}`,
             oneHourAgo,
             now,
             "60s"

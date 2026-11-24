@@ -20,6 +20,10 @@ export async function GET() {
       cadvisorUpRes,
       cadvisorCpuRes,
       cadvisorMemRes,
+      pm2CpuCollectorUpRes,
+      cpuCollectorRes,
+      cpuCoresRes,
+      processCountRes,
     ] = await Promise.all([
       prometheusClient.queryInstant(PROMQL.PM2_UP).catch(() => []),
       prometheusClient.queryInstant(PROMQL.PM2_APP_STATUS).catch(() => []),
@@ -31,9 +35,14 @@ export async function GET() {
       prometheusClient.queryInstant(PROMQL.CADVISOR_UP).catch(() => []),
       prometheusClient.queryInstant(PROMQL.CONTAINER_CPU_USAGE).catch(() => []),
       prometheusClient.queryInstant(PROMQL.CONTAINER_MEMORY_BYTES).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_CPU_COLLECTOR_UP).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_CPU_PERCENT).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_CPU_CORES).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_PROCESS_COUNT).catch(() => []),
     ]);
 
     const pm2ExporterUp = pm2UpRes.length > 0 && pm2UpRes[0]?.value?.[1] === "1";
+    const pm2CpuCollectorUp = pm2CpuCollectorUpRes.length > 0 && pm2CpuCollectorUpRes[0]?.value?.[1] === "1";
     const cadvisorUp = cadvisorUpRes.length > 0 && cadvisorUpRes[0]?.value?.[1] === "1";
 
     const pm2Apps = transformPm2Applications({
@@ -43,6 +52,9 @@ export async function GET() {
       instanceResults: instanceRes,
       restartResults: restartRes,
       uptimeResults: uptimeRes,
+      cpuCollectorResults: cpuCollectorRes,
+      cpuCoresResults: cpuCoresRes,
+      processCountResults: processCountRes,
     });
 
     const dockerApps = mergeContainerMetrics(cadvisorCpuRes, cadvisorMemRes);
@@ -63,6 +75,7 @@ export async function GET() {
       erroredCount,
       unknownCount,
       pm2ExporterUp,
+      pm2CpuCollectorUp,
       cadvisorUp,
     };
 
@@ -88,6 +101,7 @@ export async function GET() {
           erroredCount: 0,
           unknownCount: 0,
           pm2ExporterUp: false,
+          pm2CpuCollectorUp: false,
           cadvisorUp: false,
         },
         error: err?.message || "Failed to load applications",

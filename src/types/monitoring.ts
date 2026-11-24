@@ -43,6 +43,8 @@ export interface MonitoredApplication {
   // Phase 4 Extensions
   instances?: number;
   cpuPercent?: number | null;
+  cpuCores?: number | null;
+  processCount?: number | null;
   memoryBytes?: number | null;
   memoryMiB?: number | null;
   uptimeSeconds?: number | null;
@@ -59,6 +61,7 @@ export interface ApplicationsSummary {
   erroredCount: number;
   unknownCount: number;
   pm2ExporterUp: boolean;
+  pm2CpuCollectorUp?: boolean;
   cadvisorUp: boolean;
 }
 

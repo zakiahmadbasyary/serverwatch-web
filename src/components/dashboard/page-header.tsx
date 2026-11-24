@@ -1,5 +1,5 @@
 import React from "react";
-import { StatusBadge, SampleDataBadge } from "@/components/dashboard/status-badge";
+import { StatusBadge } from "@/components/dashboard/status-badge";
 import { MetricStatus } from "@/types/monitoring";
 
 interface PageHeaderProps {
@@ -33,7 +33,6 @@ export function PageHeader({
       </div>
 
       <div className="flex items-center gap-2 self-start sm:self-auto">
-        <SampleDataBadge className="md:hidden" />
         {children}
       </div>
     </div>

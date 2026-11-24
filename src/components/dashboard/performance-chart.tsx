@@ -51,9 +51,9 @@ export function PerformanceChart({
             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-text-secondary mb-3">
               <Activity className="w-5 h-5 text-text-secondary" />
             </div>
-            <h4 className="text-sm font-semibold text-text-primary">Tidak Ada Data Metrik</h4>
+            <h4 className="text-sm font-semibold text-text-primary">Data Metrik Belum Tersedia</h4>
             <p className="text-xs text-text-secondary max-w-sm mt-1">
-              Grafik time-series kosong karena belum terhubung ke Prometheus. Pastikan SSH tunnel port 9090 aktif untuk memuat metrik real-time.
+              Grafik time-series membutuhkan metrik aktif dari Prometheus. Data akan otomatis terisi seiring scrape target berjalan.
             </p>
           </div>
         ) : (
@@ -96,6 +96,7 @@ export function PerformanceChart({
                       boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
                     }}
                     labelStyle={{ fontWeight: "bold", color: "#17251D", marginBottom: "4px" }}
+                    formatter={(val: any, name: any) => [`${Number(val).toFixed(1)}%`, name]}
                   />
                   <Area
                     type="monotone"

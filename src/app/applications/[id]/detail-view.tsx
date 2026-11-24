@@ -135,10 +135,12 @@ export function ApplicationDetailView({ id }: { id: string }) {
             <span className="font-semibold uppercase tracking-wider">CPU Usage</span>
           </div>
           <div className="text-2xl font-bold font-mono text-text-primary mt-2">
-            {app.cpuUsage.toFixed(1)}%
+            {app.cpuUsage > 0 && app.cpuUsage < 0.1 ? app.cpuUsage.toFixed(2) : app.cpuUsage.toFixed(1)}%
           </div>
           <span className="text-[11px] text-text-secondary mt-0.5 block">
-            Of allocated host quota
+            {app.cpuCores !== undefined && app.cpuCores !== null
+              ? `${app.cpuCores.toFixed(4)} cores (2 vCPU)`
+              : "Of allocated host quota"}
           </span>
         </Card>
 
@@ -192,7 +194,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
                 {app.type === "pm2" ? "Process CPU & Memory Trends" : "Container CPU & Memory Trends"}
               </CardTitle>
               <CardDescription>
-                {app.type === "pm2" ? "Live process utilization timeline" : "Live container utilization timeline"} for {app.name} over the last 1 hour
+                {app.type === "pm2" ? "Live process tree utilization timeline" : "Live container utilization timeline"} for {app.name} over the last 1 hour
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -201,7 +203,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
                   <span className="text-sm font-semibold text-text-primary">Data Riwayat Tren Belum Tersedia</span>
                   <span className="text-xs text-text-secondary mt-1 max-w-sm">
                     {app.type === "pm2"
-                      ? "Grafik time-series membutuhkan riwayat metrik pm2_app_average_cpu dan pm2_app_total_memory dalam 1 jam terakhir. Data otomatis terisi seiring scrape Prometheus berjalan."
+                      ? "Grafik time-series membutuhkan riwayat metrik serverwatch_pm2_app_cpu_percent dan pm2_app_total_memory dalam 1 jam terakhir. Data otomatis terisi seiring scrape Prometheus berjalan."
                       : "Grafik time-series membutuhkan metrik cAdvisor aktif dalam 1 jam terakhir."}
                   </span>
                 </div>
@@ -232,6 +234,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
                           borderRadius: "12px",
                           fontSize: "12px",
                         }}
+                        formatter={(val: any, name: any) => [`${Number(val).toFixed(1)}%`, name]}
                       />
                       <Area
                         type="monotone"
@@ -306,6 +309,15 @@ export function ApplicationDetailView({ id }: { id: string }) {
                   <span className="text-text-secondary text-[11px] block">Process Instances</span>
                   <span className="font-semibold text-text-primary mt-0.5 block">
                     {app.instances} Active Worker{app.instances > 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
+
+              {app.type === "pm2" && app.processCount !== undefined && app.processCount !== null && (
+                <div className="p-3 rounded-xl bg-page-bg border border-border/80">
+                  <span className="text-text-secondary text-[11px] block">Process Tree Count</span>
+                  <span className="font-semibold text-text-primary mt-0.5 block">
+                    {app.processCount} Processes (Main + Children)
                   </span>
                 </div>
               )}

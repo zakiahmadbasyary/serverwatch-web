@@ -48,6 +48,9 @@ export async function GET() {
       pm2InstanceRes,
       pm2RestartRes,
       pm2UptimeRes,
+      pm2CpuCollectorRes,
+      pm2CpuCoresRes,
+      pm2ProcessCountRes,
     ] = await Promise.all([
       prometheusClient.queryInstant(PROMQL.CPU_USAGE_OVERALL),
       prometheusClient.queryInstant(PROMQL.MEM_TOTAL_BYTES),
@@ -75,6 +78,10 @@ export async function GET() {
       prometheusClient.queryInstant(PROMQL.PM2_APP_INSTANCES).catch(() => []),
       prometheusClient.queryInstant(PROMQL.PM2_APP_RESTARTS).catch(() => []),
       prometheusClient.queryInstant(PROMQL.PM2_APP_UPTIME).catch(() => []),
+      // PM2 Process Tree Linux /proc CPU Collector queries
+      prometheusClient.queryInstant(PROMQL.PM2_APP_CPU_PERCENT).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_CPU_CORES).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_PROCESS_COUNT).catch(() => []),
     ]);
 
     const memTotal = extractVectorValue(memTotalRes, 0);
@@ -111,6 +118,9 @@ export async function GET() {
       instanceResults: pm2InstanceRes,
       restartResults: pm2RestartRes,
       uptimeResults: pm2UptimeRes,
+      cpuCollectorResults: pm2CpuCollectorRes,
+      cpuCoresResults: pm2CpuCoresRes,
+      processCountResults: pm2ProcessCountRes,
     });
 
     const dockerApps = mergeContainerMetrics(cadvisorCpuRes, cadvisorMemRes);
@@ -118,7 +128,7 @@ export async function GET() {
 
     const liveSystemInfo = {
       hostname: "vps-ggp-prod",
-      ipAddress: "127.0.0.1 (via Tunnel)",
+      ipAddress: "127.0.0.1",
       os: "Ubuntu Server",
       kernel: "Linux (Node Exporter)",
       uptime: "Online (Prometheus)",

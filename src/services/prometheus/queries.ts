@@ -89,4 +89,20 @@ export const PROMQL = {
 
   // PM2 Application Uptime (seconds)
   PM2_APP_UPTIME: 'pm2_app_uptime',
+
+  // ---------------------------------------------------------------------------
+  // PM2 PROCESS TREE CPU COLLECTOR (LINUX /proc) - Port 9989
+  // ---------------------------------------------------------------------------
+
+  // Status PM2 CPU Collector (1 = running)
+  PM2_CPU_COLLECTOR_UP: 'serverwatch_pm2_app_cpu_collector_up',
+
+  // PM2 Application CPU Usage Percentage (normalized to 2 vCPU: 0-100%)
+  PM2_APP_CPU_PERCENT: 'serverwatch_pm2_app_cpu_percent',
+
+  // PM2 Application CPU Usage in Cores (0-2.0000 cores)
+  PM2_APP_CPU_CORES: 'serverwatch_pm2_app_cpu_cores',
+
+  // PM2 Application Process Count in Process Tree
+  PM2_APP_PROCESS_COUNT: 'serverwatch_pm2_app_process_count',
 };

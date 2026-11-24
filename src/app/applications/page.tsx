@@ -38,18 +38,10 @@ export default function ApplicationsPage() {
             </div>
             <div>
               <span className="font-bold text-text-primary">
-                Modul PM2 Prometheus Belum Terdeteksi
+                Modul PM2 Exporter Belum Terdeteksi
               </span>
               <p className="text-text-secondary text-[11px] mt-0.5">
-                Untuk menampilkan 15 proses PM2 secara real-time, pasang modul{" "}
-                <code className="font-mono bg-page-bg px-1.5 py-0.5 rounded border border-border text-text-primary">
-                  pm2-prom-module
-                </code>{" "}
-                di VPS dan tambahkan scrape target port{" "}
-                <code className="font-mono bg-page-bg px-1.5 py-0.5 rounded border border-border text-text-primary">
-                  9988
-                </code>{" "}
-                ke Prometheus.
+                Untuk menampilkan proses PM2 secara real-time, pastikan exporter PM2 aktif di server dan scrape target terhubung ke Prometheus.
               </p>
             </div>
           </div>

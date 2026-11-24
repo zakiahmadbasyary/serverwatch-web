@@ -396,6 +396,9 @@ export function transformPm2Applications(data: {
   instanceResults?: PrometheusVectorResult[];
   restartResults?: PrometheusVectorResult[];
   uptimeResults?: PrometheusVectorResult[];
+  cpuCollectorResults?: PrometheusVectorResult[];
+  cpuCoresResults?: PrometheusVectorResult[];
+  processCountResults?: PrometheusVectorResult[];
 }): MonitoredApplication[] {
   const HOST_RAM_BYTES = 7.8 * 1024 * 1024 * 1024; // 7.8 GiB
   const apps: MonitoredApplication[] = [];
@@ -411,6 +414,24 @@ export function transformPm2Applications(data: {
   for (const c of data.cpuResults || []) {
     const name = c.metric.app || c.metric.name || "";
     if (name) cpuMap.set(name, parseFloat(c.value[1]) || 0);
+  }
+
+  const cpuCollectorMap = new Map<string, number>();
+  for (const c of data.cpuCollectorResults || []) {
+    const name = c.metric.app || c.metric.name || "";
+    if (name) cpuCollectorMap.set(name, parseFloat(c.value[1]) || 0);
+  }
+
+  const cpuCoresMap = new Map<string, number>();
+  for (const c of data.cpuCoresResults || []) {
+    const name = c.metric.app || c.metric.name || "";
+    if (name) cpuCoresMap.set(name, parseFloat(c.value[1]) || 0);
+  }
+
+  const processCountMap = new Map<string, number>();
+  for (const p of data.processCountResults || []) {
+    const name = p.metric.app || p.metric.name || "";
+    if (name) processCountMap.set(name, parseInt(p.value[1], 10) || 0);
   }
 
   const instanceMap = new Map<string, number>();
@@ -443,7 +464,16 @@ export function transformPm2Applications(data: {
     const memBytes = memMap.get(appName) ?? 0;
     const memMiB = memBytes > 0 ? Number((memBytes / (1024 * 1024)).toFixed(1)) : null;
     const memUsagePercent = memBytes > 0 ? Number(((memBytes / HOST_RAM_BYTES) * 100).toFixed(1)) : 0;
-    const cpuUsage = cpuMap.get(appName) ?? 0;
+    
+    // Gunakan metrik Linux /proc process tree CPU collector jika tersedia (sudah dinormalisasi terhadap 2 vCPU)
+    const hasCollectorCpu = cpuCollectorMap.has(appName);
+    const rawCpuPercent = hasCollectorCpu ? cpuCollectorMap.get(appName)! : (cpuMap.get(appName) ?? 0);
+    const normalizedCpuPercent = rawCpuPercent > 0 && rawCpuPercent < 0.1
+      ? Number(rawCpuPercent.toFixed(2))
+      : Number(rawCpuPercent.toFixed(1));
+
+    const cpuCores = cpuCoresMap.has(appName) ? Number(cpuCoresMap.get(appName)!.toFixed(4)) : null;
+    const processCount = processCountMap.has(appName) ? processCountMap.get(appName)! : null;
     const instances = instanceMap.get(appName) ?? 1;
     const restarts = restartMap.get(appName) ?? 0;
     const uptimeSec = uptimeMap.get(appName);
@@ -451,6 +481,9 @@ export function transformPm2Applications(data: {
     const availableMetrics: string[] = ["pm2_app_status"];
     if (memMap.has(appName)) availableMetrics.push("pm2_app_total_memory");
     if (cpuMap.has(appName)) availableMetrics.push("pm2_app_average_cpu");
+    if (hasCollectorCpu) availableMetrics.push("serverwatch_pm2_app_cpu_percent");
+    if (cpuCores !== null) availableMetrics.push("serverwatch_pm2_app_cpu_cores");
+    if (processCount !== null) availableMetrics.push("serverwatch_pm2_app_process_count");
     if (instanceMap.has(appName)) availableMetrics.push("pm2_app_instances");
     if (restartMap.has(appName)) availableMetrics.push("pm2_app_restart_count");
     if (uptimeMap.has(appName)) availableMetrics.push("pm2_app_uptime");
@@ -464,8 +497,10 @@ export function transformPm2Applications(data: {
       exporterEndpoint,
       containerId: undefined, // PM2 proses bukan Docker container
       port: "-",
-      cpuUsage: Number(cpuUsage.toFixed(1)),
-      cpuPercent: Number(cpuUsage.toFixed(1)),
+      cpuUsage: normalizedCpuPercent,
+      cpuPercent: normalizedCpuPercent,
+      cpuCores,
+      processCount,
       memoryUsage: memUsagePercent,
       memoryBytes: memBytes > 0 ? memBytes : null,
       memoryMiB: memMiB,

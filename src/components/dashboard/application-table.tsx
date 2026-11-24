@@ -139,21 +139,35 @@ export function ApplicationTable({
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span
-                        className={cn(
-                          "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
-                          app.category === "monitoring"
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
-                            : app.type === "docker"
-                            ? "bg-blue-50 text-blue-700 border border-blue-200"
-                            : "bg-purple-50 text-purple-700 border border-purple-200"
+                      <div className="flex flex-col items-start gap-1">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider",
+                            app.category === "monitoring"
+                              ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                              : app.type === "docker"
+                              ? "bg-blue-50 text-blue-700 border border-blue-200"
+                              : "bg-purple-50 text-purple-700 border border-purple-200"
+                          )}
+                        >
+                          {app.category === "monitoring" ? "Monitor" : app.type}
+                        </span>
+                        {app.processCount !== undefined && app.processCount !== null && (
+                          <span className="text-[10px] text-text-secondary font-mono">
+                            {app.processCount} proc{app.processCount > 1 ? "s" : ""}
+                          </span>
                         )}
-                      >
-                        {app.category === "monitoring" ? "Monitor" : app.type}
-                      </span>
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4 font-mono font-medium text-text-primary">
-                      {app.cpuUsage.toFixed(1)}%
+                    <td className="py-3.5 px-4">
+                      <div className="font-mono font-medium text-text-primary">
+                        {app.cpuUsage > 0 && app.cpuUsage < 0.1 ? app.cpuUsage.toFixed(2) : app.cpuUsage.toFixed(1)}%
+                      </div>
+                      {app.cpuCores !== undefined && app.cpuCores !== null && (
+                        <div className="text-[10px] text-text-secondary font-mono">
+                          {app.cpuCores.toFixed(3)} cores
+                        </div>
+                      )}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="font-mono font-medium text-text-primary">

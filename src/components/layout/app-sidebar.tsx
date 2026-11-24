@@ -120,19 +120,19 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
           <div className="rounded-xl border border-border/80 bg-surface p-3 text-xs">
             <div className="flex items-center justify-between font-semibold text-text-primary mb-1">
               <span className="flex items-center gap-1.5">
-                <Radio className="w-3.5 h-3.5 text-primary animate-pulse" />
-                Phase 2 Prototype
+                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                Production Live
               </span>
-              <span className="text-[10px] text-primary bg-primary-soft px-1.5 py-0.5 rounded font-mono">
-                UI Mock
+              <span className="text-[10px] text-primary bg-primary-soft px-1.5 py-0.5 rounded font-mono font-semibold">
+                v1.0.0
               </span>
             </div>
             <p className="text-[11px] text-text-secondary leading-relaxed">
-              Monitoring node exporter & cAdvisor siap dihubungkan di Phase 3.
+              Monitoring VPS Ubuntu, PM2 runtime, dan container Docker produksi.
             </p>
             <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-text-secondary">
               <span>ServerWatch Web</span>
-              <span className="font-mono">v0.2.0</span>
+              <span className="font-semibold text-primary">PT GGP</span>
             </div>
           </div>
         </div>

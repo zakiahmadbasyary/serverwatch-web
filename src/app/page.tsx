@@ -20,7 +20,7 @@ export default function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      {/* Offline Alert Banner if Prometheus SSH Tunnel is not connected */}
+      {/* Offline Alert Banner if Prometheus is not reachable */}
       {!isConnected && (
         <div className="rounded-2xl border border-warning/40 bg-[#FFFDF5] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-start sm:items-center gap-2.5">
@@ -29,18 +29,18 @@ export default function OverviewPage() {
             </div>
             <div>
               <span className="font-bold text-text-primary">
-                Prometheus Belum Terhubung (Tidak Ada Data)
+                Koneksi Prometheus Tidak Terjangkau
               </span>
               <p className="text-text-secondary text-[11px] mt-0.5">
-                Pastikan sesi SSH Tunnel di laptop Anda sedang berjalan:{" "}
+                Tidak dapat mengambil metrik dari Prometheus. Pastikan service Prometheus aktif di server atau periksa variabel lingkungan{" "}
                 <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-warning/30 text-text-primary">
-                  ssh -N -L 9090:127.0.0.1:9090 root@IP_VPS
-                </code>
+                  PROMETHEUS_URL
+                </code>.
               </p>
             </div>
           </div>
           <span className="text-[11px] font-semibold text-warning bg-[#FFF5D6] px-2.5 py-1 rounded-full shrink-0 self-start sm:self-auto">
-            Port 9090 Standby
+            Prometheus Standby
           </span>
         </div>
       )}
