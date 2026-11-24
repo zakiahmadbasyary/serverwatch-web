@@ -1,0 +1,27 @@
+[Unit]
+Description=ServerWatch PM2 Process Tree CPU Collector for Prometheus
+After=network.target pm2-root.service
+Wants=pm2-root.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/serverwatch/pm2-cpu-collector
+ExecStart=/usr/bin/node /opt/serverwatch/pm2-cpu-collector/collector.js
+Restart=always
+RestartSec=5
+
+# Environment Configuration
+Environment=COLLECTOR_HOST=172.20.0.1
+Environment=COLLECTOR_PORT=9989
+Environment=SAMPLE_INTERVAL_MS=5000
+Environment=NODE_ENV=production
+
+# Security & Isolation Limits
+LimitNOFILE=65535
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=serverwatch-pm2-cpu-collector
+
+[Install]
+WantedBy=multi-user.target
