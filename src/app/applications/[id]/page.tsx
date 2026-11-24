@@ -5,13 +5,20 @@ export function generateStaticParams() {
   return [{ id: "preview" }];
 }
 
-export default async function ApplicationDetailPage({
+async function ApplicationDetailContent({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  return <ApplicationDetailView id={id} />;
+}
 
+export default function ApplicationDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   return (
     <Suspense
       fallback={
@@ -20,7 +27,7 @@ export default async function ApplicationDetailPage({
         </div>
       }
     >
-      <ApplicationDetailView id={id} />
+      <ApplicationDetailContent params={params} />
     </Suspense>
   );
 }
