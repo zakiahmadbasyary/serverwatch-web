@@ -49,4 +49,44 @@ export const PROMQL = {
 
   // Docker Container Memory usage (Working set bytes)
   CONTAINER_MEMORY_BYTES: 'container_memory_working_set_bytes{name!=""}',
+
+  // cAdvisor Scrape Target Health
+  CADVISOR_UP: 'up{job="serverwatch-cadvisor"}',
+
+  // Container metrics by cgroup id / name
+  CONTAINER_CPU_RATE_ALL: 'rate(container_cpu_usage_seconds_total[5m]) * 100',
+  CONTAINER_MEM_ALL: 'container_memory_working_set_bytes',
+  CONTAINER_NETWORK_RX_ALL: 'rate(container_network_receive_bytes_total[5m])',
+  CONTAINER_NETWORK_TX_ALL: 'rate(container_network_transmit_bytes_total[5m])',
+
+  // ---------------------------------------------------------------------------
+  // PM2 PROMETHEUS MODULE METRICS
+  // ---------------------------------------------------------------------------
+
+  // PM2 Exporter Scrape Target Health
+  PM2_UP: 'up{job="serverwatch-pm2"}',
+
+  // PM2 Application Status (0=unknown, 1=running, 2=pending, 3=stopped, 4=errored)
+  PM2_APP_STATUS: 'pm2_app_status',
+
+  // PM2 Available Applications Count
+  PM2_AVAILABLE_APPS: 'pm2_available_apps',
+
+  // PM2 Application Instances Count
+  PM2_APP_INSTANCES: 'pm2_app_instances',
+
+  // PM2 Application Total Memory (bytes)
+  PM2_APP_TOTAL_MEM: 'pm2_app_total_memory',
+
+  // PM2 Application Average Memory (bytes)
+  PM2_APP_AVG_MEM: 'pm2_app_average_memory',
+
+  // PM2 Application CPU Usage (%)
+  PM2_APP_CPU: 'pm2_app_cpu',
+
+  // PM2 Application Restart Count
+  PM2_APP_RESTARTS: 'pm2_app_restarts',
+
+  // PM2 Application Uptime (seconds)
+  PM2_APP_UPTIME: 'pm2_app_uptime',
 };

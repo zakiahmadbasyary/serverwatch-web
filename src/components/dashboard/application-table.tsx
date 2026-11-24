@@ -73,10 +73,10 @@ export function ApplicationTable({
               onChange={(e) => setFilterType(e.target.value)}
               className="py-1.5 px-3 text-xs bg-page-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary cursor-pointer"
             >
-              <option value="all">All Workloads</option>
-              <option value="pm2">PM2 (15)</option>
-              <option value="docker-business">Docker Business (5)</option>
-              <option value="monitoring">Monitoring Stack (4)</option>
+              <option value="all">All Workloads ({applications.length})</option>
+              <option value="pm2">PM2 ({applications.filter((a) => a.type === "pm2").length})</option>
+              <option value="docker-business">Docker ({applications.filter((a) => a.type === "docker" && a.category !== "monitoring").length})</option>
+              <option value="monitoring">Monitoring Stack ({applications.filter((a) => a.category === "monitoring").length})</option>
             </select>
             <select
               value={filterStatus}
@@ -112,9 +112,9 @@ export function ApplicationTable({
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-text-secondary">
                     <div className="flex flex-col items-center justify-center gap-1.5">
-                      <span className="font-semibold text-text-primary text-xs">Tidak Ada Data Container</span>
+                      <span className="font-semibold text-text-primary text-xs">Tidak Ada Aplikasi / Container Terdeteksi</span>
                       <span className="text-[11px] text-text-secondary">
-                        Belum ada data aplikasi atau container yang terbaca dari Prometheus / cAdvisor.
+                        Belum ada metrik aplikasi yang terbaca dari Prometheus (cAdvisor atau pm2-prom-module).
                       </span>
                     </div>
                   </td>

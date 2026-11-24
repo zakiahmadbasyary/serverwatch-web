@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useMetrics } from "@/hooks/use-metrics";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { MonitoredApplication } from "@/types/monitoring";
 import {
   ArrowLeft,
   Cpu,
@@ -13,6 +14,9 @@ import {
   RotateCcw,
   Clock,
   Activity,
+  Layers3,
+  Server,
+  RefreshCw,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -25,8 +29,55 @@ import {
 } from "recharts";
 
 export function ApplicationDetailView({ id }: { id: string }) {
-  const { applications, trendData, isConnected } = useMetrics();
-  const app = applications.find((a) => a.id === id);
+  const { applications, isConnected } = useMetrics();
+  const [detailedApp, setDetailedApp] = useState<MonitoredApplication | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Initial lookup from cached list
+  const initialApp = applications.find(
+    (a) => a.id.toLowerCase() === id.toLowerCase() || a.name.toLowerCase() === id.toLowerCase()
+  );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchDetail() {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/applications/${encodeURIComponent(id)}`, {
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data && isMounted) {
+            setDetailedApp(json.data);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch application detail:", err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+
+    fetchDetail();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  const app = detailedApp || initialApp;
+
+  if (loading && !app) {
+    return (
+      <div className="space-y-6">
+        <div className="p-8 text-center text-text-secondary flex items-center justify-center gap-2">
+          <RefreshCw className="w-4 h-4 animate-spin text-primary" />
+          <span>Memuat data aplikasi...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!app) {
     return (
@@ -41,21 +92,15 @@ export function ApplicationDetailView({ id }: { id: string }) {
         <Card className="p-8 text-center">
           <h2 className="text-lg font-bold text-text-primary">Data Aplikasi Tidak Ditemukan</h2>
           <p className="text-xs text-text-secondary mt-1">
-            Container atau workload dengan ID "{id}" belum terdeteksi dari Prometheus / cAdvisor.
+            Container atau workload dengan ID &quot;{id}&quot; belum terdeteksi dari Prometheus (cAdvisor atau pm2-prom-module).
           </p>
         </Card>
       </div>
     );
   }
 
-  // App specific trend data if available
-  const appTrendData = Array.isArray(trendData) && trendData.length > 0
-    ? trendData.map((d) => ({
-        time: d.time,
-        cpu: Number(((d.cpu / 100) * (app.cpuUsage * 2)).toFixed(1)),
-        memory: Number(((d.memory / 100) * (app.memoryUsage * 1.5)).toFixed(1)),
-      }))
-    : [];
+  // App specific trend data from real range query
+  const appTrendData = app.history && app.history.length > 0 ? app.history : [];
 
   return (
     <div className="space-y-6">
@@ -231,6 +276,15 @@ export function ApplicationDetailView({ id }: { id: string }) {
                   {app.port || "None"}
                 </span>
               </div>
+
+              {app.type === "pm2" && app.instances !== undefined && (
+                <div className="p-3 rounded-xl bg-page-bg border border-border/80">
+                  <span className="text-text-secondary text-[11px] block">Process Instances</span>
+                  <span className="font-semibold text-text-primary mt-0.5 block">
+                    {app.instances} Active Worker{app.instances > 1 ? "s" : ""}
+                  </span>
+                </div>
+              )}
 
               <div className="p-3 rounded-xl bg-page-bg border border-border/80">
                 <span className="text-text-secondary text-[11px] block">Last Telemetry Poll</span>

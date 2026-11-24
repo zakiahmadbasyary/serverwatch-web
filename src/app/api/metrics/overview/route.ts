@@ -6,6 +6,7 @@ import {
   transformOverviewMetrics,
   transformRangeTrend,
   mergeContainerMetrics,
+  transformPm2Applications,
 } from "@/services/prometheus/transformer";
 import {
   mockOverviewMetrics,
@@ -40,6 +41,13 @@ export async function GET() {
       // Containers cAdvisor
       cadvisorCpuRes,
       cadvisorMemRes,
+      // PM2 Metrics
+      pm2StatusRes,
+      pm2MemRes,
+      pm2CpuRes,
+      pm2InstanceRes,
+      pm2RestartRes,
+      pm2UptimeRes,
     ] = await Promise.all([
       prometheusClient.queryInstant(PROMQL.CPU_USAGE_OVERALL),
       prometheusClient.queryInstant(PROMQL.MEM_TOTAL_BYTES),
@@ -60,6 +68,13 @@ export async function GET() {
       // Container queries
       prometheusClient.queryInstant(PROMQL.CONTAINER_CPU_USAGE).catch(() => []),
       prometheusClient.queryInstant(PROMQL.CONTAINER_MEMORY_BYTES).catch(() => []),
+      // PM2 queries
+      prometheusClient.queryInstant(PROMQL.PM2_APP_STATUS).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_TOTAL_MEM).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_CPU).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_INSTANCES).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_RESTARTS).catch(() => []),
+      prometheusClient.queryInstant(PROMQL.PM2_APP_UPTIME).catch(() => []),
     ]);
 
     const memTotal = extractVectorValue(memTotalRes, 0);
@@ -89,7 +104,17 @@ export async function GET() {
         ? transformRangeTrend(cpuTrendRes, memTrendRes, netRxTrendRes, netTxTrendRes, diskPercent)
         : [];
 
-    const applications = mergeContainerMetrics(cadvisorCpuRes, cadvisorMemRes);
+    const pm2Apps = transformPm2Applications({
+      statusResults: pm2StatusRes,
+      memResults: pm2MemRes,
+      cpuResults: pm2CpuRes,
+      instanceResults: pm2InstanceRes,
+      restartResults: pm2RestartRes,
+      uptimeResults: pm2UptimeRes,
+    });
+
+    const dockerApps = mergeContainerMetrics(cadvisorCpuRes, cadvisorMemRes);
+    const applications = [...pm2Apps, ...dockerApps];
 
     const liveSystemInfo = {
       hostname: "vps-ggp-prod",

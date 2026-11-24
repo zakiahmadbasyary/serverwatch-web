@@ -304,3 +304,130 @@ export function mergeContainerMetrics(
     };
   });
 }
+
+/**
+ * Helper memformat durasi detik menjadi hari/jam/menit
+ */
+export function formatSecondsToUptime(seconds: number | undefined | null): string {
+  if (!seconds || seconds <= 0) return "N/A";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  return `${minutes}m`;
+}
+
+/**
+ * Status mapping numerik pm2-prom-module:
+ * 0 = unknown, 1 = online/running, 2 = pending, 3 = stopped, 4 = errored
+ */
+export function mapPm2Status(statusCode: number): { status: MetricStatus; statusText: string } {
+  switch (statusCode) {
+    case 1:
+      return { status: "healthy", statusText: "Online" };
+    case 2:
+      return { status: "warning", statusText: "Pending" };
+    case 3:
+      return { status: "warning", statusText: "Stopped" };
+    case 4:
+      return { status: "critical", statusText: "Errored" };
+    default:
+      return { status: "unknown", statusText: "Unknown" };
+  }
+}
+
+/**
+ * Transform data metrik PM2 dari Prometheus exporter (pm2-prom-module)
+ */
+export function transformPm2Applications(data: {
+  statusResults: PrometheusVectorResult[];
+  memResults?: PrometheusVectorResult[];
+  cpuResults?: PrometheusVectorResult[];
+  instanceResults?: PrometheusVectorResult[];
+  restartResults?: PrometheusVectorResult[];
+  uptimeResults?: PrometheusVectorResult[];
+}): MonitoredApplication[] {
+  const HOST_RAM_BYTES = 7.8 * 1024 * 1024 * 1024; // 7.8 GiB
+  const apps: MonitoredApplication[] = [];
+
+  const memMap = new Map<string, number>();
+  for (const m of data.memResults || []) {
+    const name = m.metric.name || m.metric.app || "";
+    if (name) memMap.set(name, parseFloat(m.value[1]) || 0);
+  }
+
+  const cpuMap = new Map<string, number>();
+  for (const c of data.cpuResults || []) {
+    const name = c.metric.name || c.metric.app || "";
+    if (name) cpuMap.set(name, parseFloat(c.value[1]) || 0);
+  }
+
+  const instanceMap = new Map<string, number>();
+  for (const inst of data.instanceResults || []) {
+    const name = inst.metric.name || inst.metric.app || "";
+    if (name) instanceMap.set(name, parseInt(inst.value[1], 10) || 1);
+  }
+
+  const restartMap = new Map<string, number>();
+  for (const r of data.restartResults || []) {
+    const name = r.metric.name || r.metric.app || "";
+    if (name) restartMap.set(name, parseInt(r.value[1], 10) || 0);
+  }
+
+  const uptimeMap = new Map<string, number>();
+  for (const u of data.uptimeResults || []) {
+    const name = u.metric.name || u.metric.app || "";
+    if (name) uptimeMap.set(name, parseFloat(u.value[1]) || 0);
+  }
+
+  for (const s of data.statusResults || []) {
+    const appName = s.metric.name || s.metric.app || "";
+    if (!appName) continue;
+
+    const statusCode = parseInt(s.value[1], 10);
+    const { status, statusText } = mapPm2Status(statusCode);
+    const pm2Id = s.metric.pm_id || s.metric.instance_id || s.metric.instance || "";
+
+    const memBytes = memMap.get(appName) ?? 0;
+    const memMiB = memBytes > 0 ? Number((memBytes / (1024 * 1024)).toFixed(1)) : null;
+    const memUsagePercent = memBytes > 0 ? Number(((memBytes / HOST_RAM_BYTES) * 100).toFixed(1)) : 0;
+    const cpuUsage = cpuMap.get(appName) ?? 0;
+    const instances = instanceMap.get(appName) ?? 1;
+    const restarts = restartMap.get(appName) ?? 0;
+    const uptimeSec = uptimeMap.get(appName);
+
+    const availableMetrics: string[] = ["pm2_app_status"];
+    if (memMap.has(appName)) availableMetrics.push("pm2_app_memory");
+    if (cpuMap.has(appName)) availableMetrics.push("pm2_app_cpu");
+    if (instanceMap.has(appName)) availableMetrics.push("pm2_app_instances");
+    if (restartMap.has(appName)) availableMetrics.push("pm2_app_restarts");
+    if (uptimeMap.has(appName)) availableMetrics.push("pm2_app_uptime");
+
+    apps.push({
+      id: `app-pm2-${appName.toLowerCase().replace(/[^a-z0-9_-]/g, "-")}`,
+      name: appName,
+      type: "pm2",
+      category: "business",
+      image: "Node.js (PM2)",
+      containerId: pm2Id ? `pm2-${pm2Id}` : undefined,
+      port: "-",
+      cpuUsage: Number(cpuUsage.toFixed(1)),
+      cpuPercent: Number(cpuUsage.toFixed(1)),
+      memoryUsage: memUsagePercent,
+      memoryBytes: memBytes > 0 ? memBytes : null,
+      memoryMiB: memMiB,
+      memoryRaw: memBytes > 0 ? formatBytes(memBytes).formatted : "—",
+      status,
+      statusText,
+      uptime: formatSecondsToUptime(uptimeSec),
+      uptimeSeconds: uptimeSec ?? null,
+      restartCount: restarts,
+      instances,
+      metricsAvailable: availableMetrics,
+      lastUpdated: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
+    });
+  }
+
+  return apps;
+}

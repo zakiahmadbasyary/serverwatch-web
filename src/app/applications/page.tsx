@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { ApplicationTable } from "@/components/dashboard/application-table";
 import { useMetrics } from "@/hooks/use-metrics";
 import { Card } from "@/components/ui/card";
+import { Layers } from "lucide-react";
 
 export default function ApplicationsPage() {
   const { applications, isConnected } = useMetrics();
@@ -27,6 +28,36 @@ export default function ApplicationsPage() {
             : "Tidak Ada Data (Disconnected)",
         }}
       />
+
+      {/* Informative notice if PM2 exporter has not been scraped yet */}
+      {isConnected && pm2Count === 0 && (
+        <div className="rounded-2xl border border-border bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary-soft flex items-center justify-center shrink-0 text-primary">
+              <Layers className="w-4 h-4 text-primary" />
+            </div>
+            <div>
+              <span className="font-bold text-text-primary">
+                Modul PM2 Prometheus Belum Terdeteksi
+              </span>
+              <p className="text-text-secondary text-[11px] mt-0.5">
+                Untuk menampilkan 15 proses PM2 secara real-time, pasang modul{" "}
+                <code className="font-mono bg-page-bg px-1.5 py-0.5 rounded border border-border text-text-primary">
+                  pm2-prom-module
+                </code>{" "}
+                di VPS dan tambahkan scrape target port{" "}
+                <code className="font-mono bg-page-bg px-1.5 py-0.5 rounded border border-border text-text-primary">
+                  9988
+                </code>{" "}
+                ke Prometheus.
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold text-text-secondary bg-page-bg px-2.5 py-1 rounded-full shrink-0 self-start sm:self-auto border border-border">
+            Target Standby
+          </span>
+        </div>
+      )}
 
       {/* Runtimes Summary KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

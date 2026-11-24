@@ -39,6 +39,41 @@ export interface MonitoredApplication {
   uptime: string;
   restartCount: number;
   lastUpdated: string;
+  // Phase 4 Extensions
+  instances?: number;
+  cpuPercent?: number | null;
+  memoryBytes?: number | null;
+  memoryMiB?: number | null;
+  uptimeSeconds?: number | null;
+  metricsAvailable?: string[];
+  history?: MetricDataPoint[];
+}
+
+export interface ApplicationsSummary {
+  total: number;
+  pm2Count: number;
+  dockerCount: number;
+  onlineCount: number;
+  stoppedCount: number;
+  erroredCount: number;
+  unknownCount: number;
+  pm2ExporterUp: boolean;
+  cadvisorUp: boolean;
+}
+
+export interface ApplicationsResponse {
+  success: boolean;
+  source: string;
+  updatedAt: string;
+  summary: ApplicationsSummary;
+  data: MonitoredApplication[];
+}
+
+export interface ApplicationDetailResponse {
+  success: boolean;
+  source: string;
+  data: MonitoredApplication | null;
+  error?: string;
 }
 
 export interface DiskPartition {
