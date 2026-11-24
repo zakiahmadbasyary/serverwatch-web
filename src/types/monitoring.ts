@@ -30,6 +30,7 @@ export interface MonitoredApplication {
   category?: "business" | "monitoring"; // Pembeda antara workload bisnis dan stack monitoring
   image?: string;
   containerId?: string;
+  exporterEndpoint?: string; // Endpoint exporter (misal: "172.20.0.1:9988" untuk PM2)
   port?: string;
   cpuUsage: number;
   memoryUsage: number; // Persentase penggunaan RAM container/proses terhadap total RAM VPS (7.8 GiB)

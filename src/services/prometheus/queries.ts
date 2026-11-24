@@ -45,10 +45,10 @@ export const PROMQL = {
   // ---------------------------------------------------------------------------
 
   // Docker Container CPU usage (%)
-  CONTAINER_CPU_USAGE: 'sum by (name) (rate(container_cpu_usage_seconds_total{name!=""}[5m])) * 100',
+  CONTAINER_CPU_USAGE: 'sum by (name, id, image) (rate(container_cpu_usage_seconds_total[5m])) * 100',
 
   // Docker Container Memory usage (Working set bytes)
-  CONTAINER_MEMORY_BYTES: 'container_memory_working_set_bytes{name!=""}',
+  CONTAINER_MEMORY_BYTES: 'container_memory_working_set_bytes',
 
   // cAdvisor Scrape Target Health
   CADVISOR_UP: 'up{job="serverwatch-cadvisor"}',
@@ -81,11 +81,11 @@ export const PROMQL = {
   // PM2 Application Average Memory (bytes)
   PM2_APP_AVG_MEM: 'pm2_app_average_memory',
 
-  // PM2 Application CPU Usage (%)
-  PM2_APP_CPU: 'pm2_app_cpu',
+  // PM2 Application CPU Usage (%) - Verified metric from pm2-prom-module
+  PM2_APP_CPU: 'pm2_app_average_cpu',
 
-  // PM2 Application Restart Count
-  PM2_APP_RESTARTS: 'pm2_app_restarts',
+  // PM2 Application Restart Count - Verified metric from pm2-prom-module
+  PM2_APP_RESTARTS: 'pm2_app_restart_count',
 
   // PM2 Application Uptime (seconds)
   PM2_APP_UPTIME: 'pm2_app_uptime',

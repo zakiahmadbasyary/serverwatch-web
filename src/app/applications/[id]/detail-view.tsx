@@ -164,7 +164,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
             {app.uptime}
           </div>
           <span className="text-[11px] text-text-secondary mt-0.5 block">
-            Since last container start
+            {app.type === "pm2" ? "Since process start" : "Since last container start"}
           </span>
         </Card>
 
@@ -177,7 +177,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
             {app.restartCount}
           </div>
           <span className="text-[11px] text-text-secondary mt-0.5 block">
-            Total container crashes / restarts
+            {app.type === "pm2" ? "Total process restarts" : "Total container crashes / restarts"}
           </span>
         </Card>
       </div>
@@ -188,16 +188,22 @@ export function ApplicationDetailView({ id }: { id: string }) {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Container CPU & Memory Trends</CardTitle>
+              <CardTitle>
+                {app.type === "pm2" ? "Process CPU & Memory Trends" : "Container CPU & Memory Trends"}
+              </CardTitle>
               <CardDescription>
-                Live usage timeline for {app.name} over the last 1 hour
+                {app.type === "pm2" ? "Live process utilization timeline" : "Live container utilization timeline"} for {app.name} over the last 1 hour
               </CardDescription>
             </CardHeader>
             <CardContent>
               {appTrendData.length === 0 ? (
                 <div className="h-64 w-full flex flex-col items-center justify-center border border-dashed border-border rounded-xl bg-page-bg/40 text-center p-6">
-                  <span className="text-sm font-semibold text-text-primary">Tidak Ada Data Tren</span>
-                  <span className="text-xs text-text-secondary mt-1">Grafik time-series kosong karena belum ada riwayat telemetri.</span>
+                  <span className="text-sm font-semibold text-text-primary">Data Riwayat Tren Belum Tersedia</span>
+                  <span className="text-xs text-text-secondary mt-1 max-w-sm">
+                    {app.type === "pm2"
+                      ? "Grafik time-series membutuhkan riwayat metrik pm2_app_average_cpu dan pm2_app_total_memory dalam 1 jam terakhir. Data otomatis terisi seiring scrape Prometheus berjalan."
+                      : "Grafik time-series membutuhkan metrik cAdvisor aktif dalam 1 jam terakhir."}
+                  </span>
                 </div>
               ) : (
                 <div className="h-64 w-full">
@@ -227,8 +233,22 @@ export function ApplicationDetailView({ id }: { id: string }) {
                           fontSize: "12px",
                         }}
                       />
-                      <Area type="monotone" dataKey="cpu" name="Container CPU %" stroke="#16843F" strokeWidth={2} fill="url(#appCpuGrad)" />
-                      <Area type="monotone" dataKey="memory" name="Container Mem %" stroke="#3478B8" strokeWidth={2} fill="url(#appMemGrad)" />
+                      <Area
+                        type="monotone"
+                        dataKey="cpu"
+                        name={app.type === "pm2" ? "Process CPU %" : "Container CPU %"}
+                        stroke="#16843F"
+                        strokeWidth={2}
+                        fill="url(#appCpuGrad)"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="memory"
+                        name={app.type === "pm2" ? "Process Mem %" : "Container Mem %"}
+                        stroke="#3478B8"
+                        strokeWidth={2}
+                        fill="url(#appMemGrad)"
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -242,7 +262,7 @@ export function ApplicationDetailView({ id }: { id: string }) {
           <Card className="h-full">
             <CardHeader>
               <CardTitle>Workload Metadata</CardTitle>
-              <CardDescription>Configuration and container specs</CardDescription>
+              <CardDescription>Configuration and runtime specs</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3.5 text-xs">
               <div className="p-3 rounded-xl bg-page-bg border border-border/80">
@@ -264,9 +284,13 @@ export function ApplicationDetailView({ id }: { id: string }) {
               </div>
 
               <div className="p-3 rounded-xl bg-page-bg border border-border/80">
-                <span className="text-text-secondary text-[11px] block">Container ID</span>
+                <span className="text-text-secondary text-[11px] block">
+                  {app.type === "pm2" ? "Exporter Endpoint" : "Container ID"}
+                </span>
                 <span className="font-mono font-medium text-text-primary mt-0.5 block truncate">
-                  {app.containerId || "N/A"}
+                  {app.type === "pm2"
+                    ? (app.exporterEndpoint || "172.20.0.1:9988")
+                    : (app.containerId || "N/A")}
                 </span>
               </div>
 

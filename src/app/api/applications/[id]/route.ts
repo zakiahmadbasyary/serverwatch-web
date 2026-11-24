@@ -79,31 +79,42 @@ export async function GET(
       const escapedName = app.name.replace(/"/g, '\\"');
       const [cpuMatrix, memMatrix] = await Promise.all([
         prometheusClient
-          .queryRange(`pm2_app_cpu{name="${escapedName}"}`, oneHourAgo, now, "300s")
+          .queryRange(
+            `pm2_app_average_cpu{app="${escapedName}"} or pm2_app_average_cpu{name="${escapedName}"}`,
+            oneHourAgo,
+            now,
+            "60s"
+          )
           .catch(() => []),
         prometheusClient
-          .queryRange(`pm2_app_total_memory{name="${escapedName}"}`, oneHourAgo, now, "300s")
+          .queryRange(
+            `pm2_app_total_memory{app="${escapedName}"} or pm2_app_total_memory{name="${escapedName}"}`,
+            oneHourAgo,
+            now,
+            "60s"
+          )
           .catch(() => []),
       ]);
       appCpuRange = cpuMatrix;
       appMemRange = memMatrix;
     } else {
       const escapedName = app.name.replace(/"/g, '\\"');
+      const escapedId = (app.containerId || "").replace(/"/g, '\\"');
       const [cpuMatrix, memMatrix] = await Promise.all([
         prometheusClient
           .queryRange(
-            `rate(container_cpu_usage_seconds_total{name="${escapedName}"}[5m]) * 100`,
+            `rate(container_cpu_usage_seconds_total{name="${escapedName}"}[5m]) * 100 or rate(container_cpu_usage_seconds_total{id=~".*${escapedId}.*"}[5m]) * 100`,
             oneHourAgo,
             now,
-            "300s"
+            "60s"
           )
           .catch(() => []),
         prometheusClient
           .queryRange(
-            `container_memory_working_set_bytes{name="${escapedName}"}`,
+            `container_memory_working_set_bytes{name="${escapedName}"} or container_memory_working_set_bytes{id=~".*${escapedId}.*"}`,
             oneHourAgo,
             now,
-            "300s"
+            "60s"
           )
           .catch(() => []),
       ]);

@@ -1,5 +1,4 @@
 import React, { Suspense } from "react";
-import { mockApplications } from "@/lib/mock-data";
 import { ApplicationDetailView } from "./detail-view";
 
 export function generateStaticParams() {

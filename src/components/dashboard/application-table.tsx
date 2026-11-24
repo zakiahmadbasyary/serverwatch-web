@@ -35,10 +35,6 @@ export function ApplicationTable({
     const matchesType =
       filterType === "all"
         ? true
-        : filterType === "monitoring"
-        ? app.category === "monitoring"
-        : filterType === "docker-business"
-        ? app.type === "docker" && app.category !== "monitoring"
         : app.type === filterType;
 
     return matchesSearch && matchesStatus && matchesType;
@@ -50,9 +46,9 @@ export function ApplicationTable({
     <Card className="overflow-hidden">
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <CardTitle>Monitored Applications & Containers</CardTitle>
+          <CardTitle>Monitored Applications & Workloads</CardTitle>
           <CardDescription>
-            Docker containers and PM2 application runtimes status
+            Live status for PM2 process applications and Docker containers
           </CardDescription>
         </div>
 
@@ -62,7 +58,7 @@ export function ApplicationTable({
               <Search className="w-4 h-4 text-text-secondary absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search container..."
+                placeholder="Search workload..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 pr-3 py-1.5 text-xs bg-page-bg border border-border rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 transition-all text-text-primary"
@@ -71,17 +67,16 @@ export function ApplicationTable({
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="py-1.5 px-3 text-xs bg-page-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary cursor-pointer"
+              className="py-1.5 px-3 text-xs bg-page-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary cursor-pointer font-medium"
             >
               <option value="all">All Workloads ({applications.length})</option>
               <option value="pm2">PM2 ({applications.filter((a) => a.type === "pm2").length})</option>
-              <option value="docker-business">Docker ({applications.filter((a) => a.type === "docker" && a.category !== "monitoring").length})</option>
-              <option value="monitoring">Monitoring Stack ({applications.filter((a) => a.category === "monitoring").length})</option>
+              <option value="docker">Docker ({applications.filter((a) => a.type === "docker").length})</option>
             </select>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="py-1.5 px-3 text-xs bg-page-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary cursor-pointer"
+              className="py-1.5 px-3 text-xs bg-page-bg border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary cursor-pointer font-medium"
             >
               <option value="all">All Status</option>
               <option value="healthy">Healthy</option>
@@ -98,7 +93,7 @@ export function ApplicationTable({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-page-bg/70 border-b border-border text-text-secondary font-semibold uppercase tracking-wider text-[11px]">
-                <th className="py-3 px-5">Application / Name</th>
+                <th className="py-3 px-5">Application / Workload</th>
                 <th className="py-3 px-4">Runtime</th>
                 <th className="py-3 px-4">CPU</th>
                 <th className="py-3 px-4">Memory</th>
@@ -112,9 +107,19 @@ export function ApplicationTable({
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-text-secondary">
                     <div className="flex flex-col items-center justify-center gap-1.5">
-                      <span className="font-semibold text-text-primary text-xs">Tidak Ada Aplikasi / Container Terdeteksi</span>
-                      <span className="text-[11px] text-text-secondary">
-                        Belum ada metrik aplikasi yang terbaca dari Prometheus (cAdvisor atau pm2-prom-module).
+                      <span className="font-semibold text-text-primary text-xs">
+                        {filterType === "docker"
+                          ? "Tidak Ada Container Docker Aktif"
+                          : filterType === "pm2"
+                          ? "Tidak Ada Proses PM2 Terdeteksi"
+                          : "Tidak Ada Workload Terdeteksi"}
+                      </span>
+                      <span className="text-[11px] text-text-secondary max-w-sm">
+                        {filterType === "docker"
+                          ? "cAdvisor aktif di Prometheus, namun belum ada container Docker spesifik yang terdeteksi dari cgroup saat ini."
+                          : filterType === "pm2"
+                          ? "Belum ada proses PM2 yang terdeteksi dari modul pm2-prom-module."
+                          : "Tidak ada beban kerja yang cocok dengan filter atau pencarian Anda."}
                       </span>
                     </div>
                   </td>

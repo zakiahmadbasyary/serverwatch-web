@@ -20,11 +20,11 @@ export default function ApplicationsPage() {
       {/* Header */}
       <PageHeader
         title="Monitored Applications"
-        description="Daftar container Docker dan proses aplikasi PM2 yang berjalan di dalam VPS."
+        description="Daftar proses aplikasi PM2 dan container Docker yang berjalan di dalam VPS."
         systemStatus={{
           status: isConnected ? "healthy" : "warning",
           label: isConnected
-            ? `${healthyCount}/${applications.length} Services Healthy (Live)`
+            ? `${healthyCount}/${applications.length} Workloads Healthy (${pm2Count} PM2, ${dockerCount} Docker)`
             : "Tidak Ada Data (Disconnected)",
         }}
       />

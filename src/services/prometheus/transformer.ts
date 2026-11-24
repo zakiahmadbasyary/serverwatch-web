@@ -238,7 +238,8 @@ export function transformRangeTrend(
 
 /**
  * Mengambil metrik cAdvisor container Docker aktual
- * Jika cAdvisor tidak menghasilkan data container, kembalikan array kosong []
+ * Memfilter cgroup root, systemd services/slices, dan pause container
+ * Jika cAdvisor tidak menghasilkan data container aktual, kembalikan array kosong []
  */
 export function mergeContainerMetrics(
   cadvisorCpu: PrometheusVectorResult[],
@@ -246,23 +247,64 @@ export function mergeContainerMetrics(
 ): MonitoredApplication[] {
   const cpuMap = new Map<string, number>();
   const memMap = new Map<string, number>();
+  const imageMap = new Map<string, string>();
+  const idMap = new Map<string, string>();
   const containerNames = new Set<string>();
 
+  // Filter cgroup non-container: root cgroup, system slices, user sessions, systemd services
+  const isSystemCgroup = (id: string, name: string) => {
+    if (!id && !name) return true;
+    if (id === "/" || id === "/init.scope" || id === "/system.slice" || id === "/user.slice") return true;
+    if (name === "POD" || name.startsWith("k8s_")) return true;
+    // Discard all host systemd units (service, socket, swap, slice) unless it has a valid container name
+    if (!name) {
+      if (
+        id.endsWith(".service") ||
+        id.endsWith(".socket") ||
+        id.endsWith(".slice") ||
+        id.endsWith(".scope") ||
+        id.endsWith(".swap") ||
+        id.startsWith("/system.slice") ||
+        id.startsWith("/user.slice")
+      ) {
+        // Only keep if it is an actual docker container hash (e.g. :docker:<hash> or docker-<hash>)
+        if (
+          id.includes(":docker:") ||
+          (id.includes("docker-") && !id.includes("docker.service") && !id.includes("docker.socket"))
+        ) {
+          return false;
+        }
+        return true;
+      }
+    }
+    return false;
+  };
+
   for (const c of cadvisorCpu || []) {
-    const rawName = c.metric.name || c.metric.container_label_com_docker_compose_service || c.metric.id || "";
-    const cleanName = rawName.replace(/^\//, "");
-    if (cleanName && cleanName !== "POD" && !cleanName.startsWith("k8s_")) {
-      cpuMap.set(cleanName, parseFloat(c.value[1]) || 0);
-      containerNames.add(cleanName);
+    const rawName = c.metric.name || "";
+    const rawId = c.metric.id || "";
+    if (isSystemCgroup(rawId, rawName)) continue;
+
+    const containerIdentifier = rawName || (rawId.includes("docker:") ? rawId.split("docker:")[1].slice(0, 12) : rawId.replace(/^\//, "").slice(0, 12));
+    if (containerIdentifier) {
+      cpuMap.set(containerIdentifier, parseFloat(c.value[1]) || 0);
+      if (c.metric.image) imageMap.set(containerIdentifier, c.metric.image);
+      if (rawId) idMap.set(containerIdentifier, rawId);
+      containerNames.add(containerIdentifier);
     }
   }
 
   for (const m of cadvisorMem || []) {
-    const rawName = m.metric.name || m.metric.container_label_com_docker_compose_service || m.metric.id || "";
-    const cleanName = rawName.replace(/^\//, "");
-    if (cleanName && cleanName !== "POD" && !cleanName.startsWith("k8s_")) {
-      memMap.set(cleanName, parseFloat(m.value[1]) || 0);
-      containerNames.add(cleanName);
+    const rawName = m.metric.name || "";
+    const rawId = m.metric.id || "";
+    if (isSystemCgroup(rawId, rawName)) continue;
+
+    const containerIdentifier = rawName || (rawId.includes("docker:") ? rawId.split("docker:")[1].slice(0, 12) : rawId.replace(/^\//, "").slice(0, 12));
+    if (containerIdentifier) {
+      memMap.set(containerIdentifier, parseFloat(m.value[1]) || 0);
+      if (m.metric.image) imageMap.set(containerIdentifier, m.metric.image);
+      if (rawId) idMap.set(containerIdentifier, rawId);
+      containerNames.add(containerIdentifier);
     }
   }
 
@@ -278,6 +320,8 @@ export function mergeContainerMetrics(
     const memBytes = memMap.get(name) || 0;
     const memUsagePercent = Number(((memBytes / HOST_RAM_BYTES) * 100).toFixed(1));
     const formattedMem = formatBytes(memBytes);
+    const image = imageMap.get(name) || "Docker Container";
+    const rawId = idMap.get(name) || name;
     const isMonitoring =
       name.includes("serverwatch") ||
       name.includes("prometheus") ||
@@ -290,17 +334,22 @@ export function mergeContainerMetrics(
       name,
       type: "docker" as const,
       category: isMonitoring ? ("monitoring" as const) : ("business" as const),
-      image: "Docker Container",
-      containerId: name.slice(0, 12),
+      image,
+      containerId: rawId.slice(0, 12),
       port: "-",
       cpuUsage: Number(cpuUsage.toFixed(1)),
+      cpuPercent: Number(cpuUsage.toFixed(1)),
       memoryUsage: memUsagePercent,
+      memoryBytes: memBytes > 0 ? memBytes : null,
+      memoryMiB: memBytes > 0 ? Number((memBytes / (1024 * 1024)).toFixed(1)) : null,
       memoryRaw: formattedMem.formatted,
       status: "healthy" as MetricStatus,
       statusText: "Running (Real)",
-      uptime: "Active",
+      uptime: "Active (cAdvisor)",
+      uptimeSeconds: null,
       restartCount: 0,
-      lastUpdated: "Just now",
+      metricsAvailable: ["container_cpu_usage_seconds_total", "container_memory_working_set_bytes"],
+      lastUpdated: new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }),
     };
   });
 }
@@ -350,44 +399,46 @@ export function transformPm2Applications(data: {
 }): MonitoredApplication[] {
   const HOST_RAM_BYTES = 7.8 * 1024 * 1024 * 1024; // 7.8 GiB
   const apps: MonitoredApplication[] = [];
+  const seenApps = new Set<string>();
 
   const memMap = new Map<string, number>();
   for (const m of data.memResults || []) {
-    const name = m.metric.name || m.metric.app || "";
+    const name = m.metric.app || m.metric.name || "";
     if (name) memMap.set(name, parseFloat(m.value[1]) || 0);
   }
 
   const cpuMap = new Map<string, number>();
   for (const c of data.cpuResults || []) {
-    const name = c.metric.name || c.metric.app || "";
+    const name = c.metric.app || c.metric.name || "";
     if (name) cpuMap.set(name, parseFloat(c.value[1]) || 0);
   }
 
   const instanceMap = new Map<string, number>();
   for (const inst of data.instanceResults || []) {
-    const name = inst.metric.name || inst.metric.app || "";
+    const name = inst.metric.app || inst.metric.name || "";
     if (name) instanceMap.set(name, parseInt(inst.value[1], 10) || 1);
   }
 
   const restartMap = new Map<string, number>();
   for (const r of data.restartResults || []) {
-    const name = r.metric.name || r.metric.app || "";
+    const name = r.metric.app || r.metric.name || "";
     if (name) restartMap.set(name, parseInt(r.value[1], 10) || 0);
   }
 
   const uptimeMap = new Map<string, number>();
   for (const u of data.uptimeResults || []) {
-    const name = u.metric.name || u.metric.app || "";
+    const name = u.metric.app || u.metric.name || "";
     if (name) uptimeMap.set(name, parseFloat(u.value[1]) || 0);
   }
 
   for (const s of data.statusResults || []) {
-    const appName = s.metric.name || s.metric.app || "";
-    if (!appName) continue;
+    const appName = s.metric.app || s.metric.name || "";
+    if (!appName || seenApps.has(appName)) continue;
+    seenApps.add(appName);
 
     const statusCode = parseInt(s.value[1], 10);
     const { status, statusText } = mapPm2Status(statusCode);
-    const pm2Id = s.metric.pm_id || s.metric.instance_id || s.metric.instance || "";
+    const exporterEndpoint = s.metric.instance || "172.20.0.1:9988";
 
     const memBytes = memMap.get(appName) ?? 0;
     const memMiB = memBytes > 0 ? Number((memBytes / (1024 * 1024)).toFixed(1)) : null;
@@ -398,10 +449,10 @@ export function transformPm2Applications(data: {
     const uptimeSec = uptimeMap.get(appName);
 
     const availableMetrics: string[] = ["pm2_app_status"];
-    if (memMap.has(appName)) availableMetrics.push("pm2_app_memory");
-    if (cpuMap.has(appName)) availableMetrics.push("pm2_app_cpu");
+    if (memMap.has(appName)) availableMetrics.push("pm2_app_total_memory");
+    if (cpuMap.has(appName)) availableMetrics.push("pm2_app_average_cpu");
     if (instanceMap.has(appName)) availableMetrics.push("pm2_app_instances");
-    if (restartMap.has(appName)) availableMetrics.push("pm2_app_restarts");
+    if (restartMap.has(appName)) availableMetrics.push("pm2_app_restart_count");
     if (uptimeMap.has(appName)) availableMetrics.push("pm2_app_uptime");
 
     apps.push({
@@ -410,7 +461,8 @@ export function transformPm2Applications(data: {
       type: "pm2",
       category: "business",
       image: "Node.js (PM2)",
-      containerId: pm2Id ? `pm2-${pm2Id}` : undefined,
+      exporterEndpoint,
+      containerId: undefined, // PM2 proses bukan Docker container
       port: "-",
       cpuUsage: Number(cpuUsage.toFixed(1)),
       cpuPercent: Number(cpuUsage.toFixed(1)),
